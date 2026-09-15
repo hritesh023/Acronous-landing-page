@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — Acronous</title>
+  <meta name="description" content="Official Acronous documentation: getting started, Acronous AI, Navigwiz, Equyvo, API reference, billing, security and support.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/billing.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-logo"><img src="assets/logo.png" alt="Acronous" class="nav-logo-img"><span class="nav-brand-text">Acronous</span></a>
+      <ul class="nav-links">
+        <li><a href="/#products" class="nav-link">Products</a></li>
+        <li><a href="/pricing.html" class="nav-link">Pricing</a></li>
+        <li><a href="/docs.html" class="nav-link">Docs</a></li>
+        <li><a href="/api.html" class="nav-link">API</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <main class="container docs-layout">
+    <aside class="docs-nav">
+      <div class="docs-nav-h">START HERE</div>
+      <a href="#getting-started">Getting started</a>
+      <a href="#accounts">Accounts &amp; sign-in</a>
+      <div class="docs-nav-h">PRODUCTS</div>
+      <a href="#acronous-ai">Acronous AI</a>
+      <a href="#navigwiz">Navigwiz</a>
+      <a href="#equyvo">Equyvo</a>
+      <a href="#acronous-one">Acronous One</a>
+      <div class="docs-nav-h">DEVELOPERS</div>
+      <a href="#api-overview">API overview</a>
+      <a href="#api-keys">API keys</a>
+      <a href="#api-billing">API billing</a>
+      <div class="docs-nav-h">BUSINESS</div>
+      <a href="#subscriptions">Subscriptions &amp; billing</a>
+      <a href="#refunds">Refunds &amp; cancellation</a>
+      <a href="#security">Security &amp; privacy</a>
+      <a href="#fair-use">Fair use</a>
+      <a href="#faq">FAQ</a>
+      <a href="#support">Support</a>
+    </aside>
+
+    <article class="docs-article">
+      <h1>Acronous Documentation</h1>
+      <p>Everything you need to use Acronous AI, Navigwiz, Equyvo, the Acronous One bundle and the developer API. One account works across the whole ecosystem.</p>
+
+      <h2 id="getting-started">Getting started</h2>
+      <p><strong>1. Create one Acronous account</strong> at <code>/signup</code> (or in any app). The same login works on <code>ai.acronous.com</code>, <code>navigwiz.acronous.com</code> and <code>equyvo.acronous.com</code>.</p>
+      <p><strong>2. Pick your starting point:</strong></p>
+      <ul>
+        <li><strong>Chat &amp; create</strong> → <a href="https://ai.acronous.com">Acronous AI</a> (free tier included, no card required).</li>
+        <li><strong>Browse with AI</strong> → <a href="https://navigwiz.acronous.com">Navigwiz</a> (the browser itself is free forever).</li>
+        <li><strong>Post &amp; grow</strong> → <a href="https://equyvo.acronous.com">Equyvo</a> (social is free; creators can upgrade).</li>
+      </ul>
+      <p><strong>3. Upgrade only when you need more.</strong> Paid plans unlock higher limits, premium models, agents and API credits. See <a href="/pricing.html">pricing</a>.</p>
+
+      <h2 id="accounts">Accounts &amp; sign-in</h2>
+      <ul>
+        <li>Sign-in is centralized: one JWT session cookie (<code>acronous_token</code>) valid across <code>*.acronous.com</code> for 7 days.</li>
+        <li>Each product app also accepts <code>?token=…</code> once after login, then stores it locally.</li>
+        <li>Forgot access? Use <code>/login</code> → your email + password. There is no passwordless magic link today.</li>
+        <li>Signing out in any app calls <code>POST /api/auth/logout</code> and clears the shared cookie.</li>
+      </ul>
+
+      <h2 id="acronous-ai">Acronous AI</h2>
+      <p>An AI assistant for chat, reasoning, code, files, images, voice and research. Capability-based pricing: you pay for intelligence and compute.</p>
+      <table class="docs-table"><tr><th>Plan</th><th>Price</th><th>Best for</th></tr>
+        <tr><td>Free</td><td>₹0</td><td>Trying Acronous</td></tr>
+        <tr><td>Starter</td><td>₹149/mo</td><td>Everyday AI use</td></tr>
+        <tr><td>Plus ⭐</td><td>₹449/mo</td><td>Serious users (main plan)</td></tr>
+        <tr><td>Pro</td><td>₹999/mo</td><td>Developers, researchers, founders</td></tr>
+        <tr><td>Ultra</td><td>₹2,499/mo</td><td>Heavy professional use — very large allowance, never “unlimited”</td></tr>
+        <tr><td>Enterprise</td><td>Custom</td><td>Teams &amp; business</td></tr></table>
+      <h3>Free limits</h3>
+      <p>20 chats, 3 images and 1 video per day (UTC). Paid plans skip these caps and unlock priority compute. When you hit a cap the app shows an upgrade prompt (HTTP 402 behind the scenes) — your work is never deleted.</p>
+      <h3>Tips</h3>
+      <ul><li>Attach files or images to a message for analysis and editing.</li><li>Use Projects/workspaces (Starter and up) to keep long-running context.</li><li>Plus and up include deep research and advanced memory.</li></ul>
+
+      <h2 id="navigwiz">Navigwiz</h2>
+      <p>An AI-native browser. The browser is a complete, free product — tabs, Private Space, bookmarks, history, downloads, extensions, sync. Subscriptions pay for <em>AI work on the web</em>.</p>
+      <table class="docs-table"><tr><th>Plan</th><th>Price</th><th>Unlocks</th></tr>
+        <tr><td>Browser</td><td>₹0</td><td>The full browser</td></tr>
+        <tr><td>AI Starter</td><td>₹99/mo</td><td>AI search, summaries, page Q&amp;A</td></tr>
+        <tr><td>AI Plus ⭐</td><td>₹299/mo</td><td>Multi-page research, PDFs, workspaces</td></tr>
+        <tr><td>AI Pro</td><td>₹699/mo</td><td>Agentic browsing, extraction, automation</td></tr>
+        <tr><td>AI Ultra</td><td>₹1,499/mo</td><td>Long-running agents, scheduled research, API</td></tr>
+        <tr><td>Business</td><td>Custom</td><td>Teams</td></tr></table>
+
+      <h2 id="equyvo">Equyvo</h2>
+      <p>A social network + creator economy. Basic social is free for everyone and stays free. Monetization focuses on premium experience and creator earning power.</p>
+      <table class="docs-table"><tr><th>Plan</th><th>Price</th><th>Unlocks</th></tr>
+        <tr><td>Free</td><td>₹0</td><td>Posts, videos, Moments, communities, messaging</td></tr>
+        <tr><td>Plus</td><td>₹49/mo</td><td>More storage, ad-light, customization</td></tr>
+        <tr><td>Premium ⭐</td><td>₹149/mo</td><td>Ad-free, AI content tools, advanced analytics</td></tr>
+        <tr><td>Creator ⭐</td><td>₹399/mo</td><td>Creator analytics, AI captions/thumbnails, scheduling, 4K, monetization</td></tr>
+        <tr><td>Creator Pro</td><td>₹799/mo</td><td>AI editing, teams, brand tools, API</td></tr>
+        <tr><td>Business</td><td>Custom</td><td>Brands</td></tr></table>
+
+      <h2 id="acronous-one">Acronous One — ₹699/mo</h2>
+      <p>One subscription for the ecosystem: <strong>Acronous AI Plus + Navigwiz AI Plus + Equyvo Premium</strong> (₹897 of value). Buy it once on the <a href="/pricing.html#one">pricing page</a>; access is granted in all three apps automatically.</p>
+
+      <h2 id="api-overview">API overview</h2>
+      <p>Use the Acronous AI brain inside your own apps via <code>https://api.acronous.com</code> — chat, vision, search and generation, metered per request. Full playground, keys and code samples live on the <a href="/api.html">API page</a>.</p>
+      <pre><code>curl https://api.acronous.com/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: ak_YOUR_KEY" \
+  -d '{"message":"Summarize this quarter in 3 bullets","session_id":"demo"}'</code></pre>
+
+      <h2 id="api-keys">API keys</h2>
+      <ul><li>Create keys while signed in: <code>POST /v1/api/keys {"name":"my-app"}</code> with your JWT. The secret is shown <strong>once</strong> — store it server-side.</li>
+      <li>Send it as <code>X-Api-Key</code> (recommended) or <code>Authorization: Bearer ak_…</code>.</li>
+      <li>List (<code>GET /v1/api/keys</code>) shows prefixes only; revoke with <code>DELETE /v1/api/keys {"key_id":"ak_…"}</code>.</li>
+      <li class="callout">🔑 Keys are bearer credentials. Never ship them in mobile apps, client-side JS, or public repos — call api.acronous.com from your backend.</li></ul>
+
+      <h2 id="api-billing">API billing</h2>
+      <p>Prepaid credit packs (one-time, valid 12 months). 1 credit ≈ 1K chat tokens; images ≈ 20 credits; video ≈ 50; web search ≈ 1; minimum 1 per request.</p>
+      <table class="docs-table"><tr><th>Pack</th><th>Price</th><th>Credits</th></tr>
+        <tr><td>API Starter</td><td>₹99</td><td>1,000</td></tr>
+        <tr><td>API Growth</td><td>₹499</td><td>6,000</td></tr>
+        <tr><td>API Scale</td><td>₹999</td><td>14,000</td></tr>
+        <tr><td>API Business</td><td>₹2,499</td><td>40,000</td></tr></table>
+      <p>Subscriptions also grant monthly credits: AI Plus +2,000 · Pro +10,000 · Ultra +40,000 · One +2,000. Out-of-credit API calls return HTTP 402 with <code>out_of_credits</code> — top up on the <a href="/api.html">API page</a>.</p>
+
+      <h2 id="subscriptions">Subscriptions &amp; billing</h2>
+      <ul>
+        <li>All checkout goes through <strong>Razorpay</strong>: UPI, credit/debit cards, netbanking, wallets, EMI and international cards.</li>
+        <li>Plans are monthly (30 days). Renew by purchasing again before expiry; status shows in each app and at <code>GET /v1/billing/status</code>.</li>
+        <li>You are never shown our bank details or QR codes — every payment is a Razorpay order created server-side and verified by HMAC signature. That is what makes it safe.</li>
+        <li>Enterprise / Business tiers are custom — <a href="mailto:enterprise@acronous.com">enterprise@acronous.com</a>.</li>
+      </ul>
+
+      <h2 id="refunds">Refunds &amp; cancellation</h2>
+      <ul>
+        <li>Cancel anytime — your plan stays active until the end of the 30-day window, then drops to free. No lock-in.</li>
+        <li>Duplicate charges and failed-but-debited payments are refunded in full after verification (5–7 business days via Razorpay to source).</li>
+        <li>Digital-subscription payments already consumed (e.g. a month of Ultra heavily used) are non-refundable; unused accidental purchases within 48h are reviewed case-by-case at <a href="mailto:billing@acronous.com">billing@acronous.com</a>.</li>
+      </ul>
+
+      <h2 id="security">Security &amp; privacy</h2>
+      <ul>
+        <li>Card/UPI data is entered only on Razorpay's PCI-DSS compliant checkout — it never touches Acronous servers.</li>
+        <li><code>RAZORPAY_KEY_SECRET</code> lives in server secrets (Cloudflare) only; the browser only ever sees the public key id + order id.</li>
+        <li>Payment verification is HMAC-SHA256 over <code>order_id|payment_id</code>; forged callbacks fail closed.</li>
+        <li>Auth sessions are 7-day JWTs scoped to <code>*.acronous.com</code>; API keys are hashed at rest and shown once.</li>
+      </ul>
+
+      <h2 id="fair-use">Fair use</h2>
+      <p>“Very high allowance” means exactly that — Ultra and AI Ultra are large but finite, because inference has real cost. Automated abuse, resale of free-tier access, or scraping that degrades the service for others may be rate-limited or suspended. Enterprise tiers exist for bulk needs.</p>
+
+      <h2 id="faq">FAQ</h2>
+      <h3>Why not one identical plan for all three apps?</h3>
+      <p>Because the value is different: Acronous AI sells intelligence/compute, Navigwiz sells AI work on the web, Equyvo sells premium social + creator earnings. Identical pricing would overcharge one audience and starve another.</p>
+      <h3>Which plan should most people buy?</h3>
+      <p>Acronous AI Plus (₹449) and Navigwiz AI Plus (₹299) are the mainstream plans the business is built around. Ultra tiers exist for heavy consumers, not as the default.</p>
+      <h3>Is Ultra really unlimited?</h3>
+      <p>No — and that is deliberate. Even the largest AI products meter heavy use. Ultra is a very large allowance with priority infrastructure.</p>
+      <h3>How do I pay from outside India?</h3>
+      <p>Razorpay accepts international cards on the same checkout. Pricing is in INR; your bank converts.</p>
+      <h3>Do subscriptions auto-renew?</h3>
+      <p>Today plans are manual-renew (buy again each 30 days) while UPI Autopay is being rolled out. Your data and history are kept either way.</p>
+
+      <h2 id="support">Support</h2>
+      <ul>
+        <li>Billing issues: <a href="mailto:billing@acronous.com">billing@acronous.com</a> (include your account email + payment id starting with <code>pay_</code>).</li>
+        <li>Product help: <a href="mailto:support@acronous.com">support@acronous.com</a>.</li>
+        <li>Enterprise: <a href="mailto:enterprise@acronous.com">enterprise@acronous.com</a>.</li>
+      </ul>
+      <div class="callout">Status endpoints for developers: <code>GET /health</code> · <code>GET /v1/billing/status</code> · <code>GET /v1/api/usage</code> on <code>https://api.acronous.com</code>.</div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-main">
+        <div class="footer-brand"><img src="assets/logo.png" alt="Acronous" class="footer-logo"><p class="footer-tagline">Defining the next generation of software.</p></div>
+        <div class="footer-links">
+          <div class="footer-group"><h4 class="footer-heading">Products</h4><a href="https://ai.acronous.com">Acronous AI</a><a href="https://equyvo.acronous.com">Equyvo</a><a href="https://navigwiz.acronous.com">Navigwiz</a></div>
+          <div class="footer-group"><h4 class="footer-heading">Company</h4><a href="/pricing.html">Pricing</a><a href="/docs.html">Docs</a><a href="/api.html">API</a></div>
+        </div>
+      </div>
+      <div class="footer-bottom"><p>&copy; 2026 Acronous. All rights reserved.</p></div>
+    </div>
+  </footer>
+  <script src="js/main.js"></script>
+</body>
+</html>

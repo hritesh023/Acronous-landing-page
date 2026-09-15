@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API — Acronous AI brain as a service</title>
+  <meta name="description" content="Build on the Acronous AI brain: chat, vision, search and generation APIs with prepaid credits billed securely via Razorpay.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/billing.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-logo"><img src="assets/logo.png" alt="Acronous" class="nav-logo-img"><span class="nav-brand-text">Acronous</span></a>
+      <ul class="nav-links">
+        <li><a href="/#products" class="nav-link">Products</a></li>
+        <li><a href="/pricing.html" class="nav-link">Pricing</a></li>
+        <li><a href="/docs.html" class="nav-link">Docs</a></li>
+        <li><a href="/api.html" class="nav-link">API</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="billing-hero">
+      <h1>The Acronous AI brain, <span class="hero-title-accent">as an API.</span></h1>
+      <p>Chat, vision, search and generation behind one endpoint — <code>https://api.acronous.com</code>. Prepaid credits, no seat math. Subscriptions (Plus/Pro/Ultra/One) also drop monthly credits into your account.</p>
+      <div class="cta-buttons" style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+        <a href="#keys" class="btn btn-primary">Get an API key</a>
+        <a href="#packs" class="btn btn-outline">Buy credits</a>
+      </div>
+    </div>
+
+    <div class="api-grid">
+      <div class="api-card" id="keys">
+        <h3>1 · Create an API key</h3>
+        <p>Sign in first (same Acronous account). Keys are shown <strong>once</strong> — store them on your server, never in client apps.</p>
+        <div class="key-row"><input id="key-name" placeholder="Key name, e.g. my-backend" maxlength="60"><button class="btn btn-primary" id="key-create" style="white-space:nowrap">Create</button></div>
+        <div class="key-row"><input id="key-out" readonly placeholder="ak_… appears here once"><button class="btn btn-outline" id="key-copy">Copy</button></div>
+        <p style="margin-top:10px">Balance: <strong id="credit-balance">—</strong> credits · <a href="#" id="usage-refresh">refresh</a></p>
+        <div id="key-list" style="margin-top:8px;font-size:13px;color:var(--text-secondary)"></div>
+      </div>
+      <div class="api-card">
+        <h3>2 · Try it live</h3>
+        <p>Runs from your browser with your key. Billed like any other call (1 credit min).</p>
+        <div class="key-row"><input id="pg-msg" placeholder="Ask the Acronous brain…" value="Write a haiku about monsoon servers."></div>
+        <div class="key-row"><button class="btn btn-primary" id="pg-run">Run</button></div>
+        <pre style="margin-top:12px;white-space:pre-wrap;font-size:13px"><code id="pg-out">Response appears here…</code></pre>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="packs" style="text-align:center">Credit packs</h2>
+    <p class="section-desc" style="text-align:center;max-width:640px;margin:8px auto 24px;color:var(--text-secondary)">One-time purchase · valid 12 months · 1 credit ≈ 1K chat tokens · images ≈ 20 · video ≈ 50 · search ≈ 1.</p>
+    <div class="plan-grid active">
+      <div class="plan-card"><div class="plan-name">API Starter</div><div class="plan-tag">1,000 credits</div><div class="plan-price">₹99</div>
+        <ul class="plan-feats"><li>Side projects &amp; prototypes</li><li>~1M chat tokens</li></ul><button class="btn btn-outline" data-buy="api_pack_99">Buy Starter</button></div>
+      <div class="plan-card popular"><div class="plan-badge">MOST POPULAR</div><div class="plan-name">API Growth</div><div class="plan-tag">6,000 credits</div><div class="plan-price">₹499</div>
+        <ul class="plan-feats"><li>Production pilots</li><li>Bonus credits included</li></ul><button class="btn btn-primary" data-buy="api_pack_499">Buy Growth</button></div>
+      <div class="plan-card"><div class="plan-name">API Scale</div><div class="plan-tag">14,000 credits</div><div class="plan-price">₹999</div>
+        <ul class="plan-feats"><li>Growing products</li><li>Bigger bonus</li></ul><button class="btn btn-outline" data-buy="api_pack_999">Buy Scale</button></div>
+      <div class="plan-card"><div class="plan-name">API Business</div><div class="plan-tag">40,000 credits</div><div class="plan-price">₹2,499</div>
+        <ul class="plan-feats"><li>High-volume workloads</li><li>Best per-credit rate</li></ul><button class="btn btn-outline" data-buy="api_pack_2499">Buy Business</button></div>
+    </div>
+
+    <div class="api-grid">
+      <div class="api-card"><h3>cURL</h3><pre><code>curl https://api.acronous.com/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: ak_YOUR_KEY" \
+  -d '{"message":"Hello!","session_id":"demo"}'</code></pre></div>
+      <div class="api-card"><h3>Python</h3><pre><code>import requests
+r = requests.post(
+  "https://api.acronous.com/v1/chat",
+  headers={"X-Api-Key": "ak_YOUR_KEY"},
+  json={"message": "Hello!", "session_id": "demo"},
+  timeout=120,
+)
+print(r.json()["response"])</code></pre></div>
+      <div class="api-card"><h3>JavaScript</h3><pre><code>const r = await fetch("https://api.acronous.com/v1/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json",
+             "X-Api-Key": "ak_YOUR_KEY" },
+  body: JSON.stringify({ message: "Hello!", session_id: "demo" }),
+});
+console.log((await r.json()).response);</code></pre></div>
+      <div class="api-card"><h3>Streaming</h3><pre><code>curl -N https://api.acronous.com/v1/chat/stream \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: ak_YOUR_KEY" \
+  -d '{"message":"Tell me a story","session_id":"demo"}'
+# Server-sent events: data: {"content":"…"} … data: {"done":true}</code></pre></div>
+    </div>
+
+    <div class="callout">🔒 Payments run on Razorpay orders created server-side and verified by HMAC signature — card/UPI data never touches Acronous servers. Out-of-credit calls return HTTP 402 <code>out_of_credits</code>. Full reference in <a href="/docs.html#api-overview">Docs</a>.</div>
+    <div class="secure-strip"><span>🔒 Secured by Razorpay</span><span>UPI</span><span>Cards</span><span>Netbanking</span><span>International</span></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-main">
+        <div class="footer-brand"><img src="assets/logo.png" alt="Acronous" class="footer-logo"><p class="footer-tagline">Defining the next generation of software.</p></div>
+        <div class="footer-links">
+          <div class="footer-group"><h4 class="footer-heading">Products</h4><a href="https://ai.acronous.com">Acronous AI</a><a href="https://equyvo.acronous.com">Equyvo</a><a href="https://navigwiz.acronous.com">Navigwiz</a></div>
+          <div class="footer-group"><h4 class="footer-heading">Company</h4><a href="/pricing.html">Pricing</a><a href="/docs.html">Docs</a><a href="/api.html">API</a></div>
+        </div>
+      </div>
+      <div class="footer-bottom"><p>&copy; 2026 Acronous. All rights reserved. Payments secured by Razorpay.</p></div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/billing-client.js"></script>
+  <script>
+    (function () {
+      var B = window.AcronousBilling;
+      function needSignin() { B.toast('Please sign in first (top-right of any Acronous app, same account).'); }
+      function base() { return B.getApiBase(); }
+      function token() {
+        var m = document.cookie.match(/(?:^|;\s*)acronous_token=([^;]+)/);
+        if (m) return decodeURIComponent(m[1]);
+        try { return localStorage.getItem('acronous_token'); } catch (e) { return null; }
+      }
+      document.getElementById('key-create').addEventListener('click', function () {
+        var t = token();
+        if (!t) { needSignin(); return; }
+        var name = (document.getElementById('key-name').value || 'default').slice(0, 60);
+        fetch(base() + '/v1/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ name: name }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j.api_key) { document.getElementById('key-out').value = j.api_key; B.toast('Key created. Copy it now — it is never shown again.', true); refreshKeys(); }
+            else B.toast(j.error || 'Could not create key.');
+          }).catch(function () { B.toast('Could not create key.'); });
+      });
+      document.getElementById('key-copy').addEventListener('click', function () {
+        var el = document.getElementById('key-out'); el.select();
+        try { document.execCommand('copy'); B.toast('Copied.', true); } catch (e) {}
+      });
+      function refreshKeys() {
+        var t = token(); if (!t) return;
+        fetch(base() + '/v1/api/keys', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (r) { return r.json(); }).then(function (j) {
+          var list = (j.keys || []).map(function (k) { return '<div>' + k.prefix + ' · ' + (k.name || '') + '</div>'; }).join('');
+          document.getElementById('key-list').innerHTML = list || '<div>No keys yet.</div>';
+        }).catch(function () {});
+        fetch(base() + '/v1/api/usage', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (r) { return r.json(); }).then(function (j) {
+          if (typeof j.api_credits === 'number') document.getElementById('credit-balance').textContent = j.api_credits.toLocaleString('en-IN');
+        }).catch(function () {});
+      }
+      document.getElementById('usage-refresh').addEventListener('click', function (e) { e.preventDefault(); refreshKeys(); });
+      document.getElementById('pg-run').addEventListener('click', function () {
+        var key = (document.getElementById('key-out').value || '').trim();
+        if (!key || key.indexOf('ak_') !== 0) { B.toast('Create an API key first, then run.'); return; }
+        var msg = document.getElementById('pg-msg').value || 'Hello!';
+        document.getElementById('pg-out').textContent = 'Thinking… (1 credit)';
+        fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }) })
+          .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+          .then(function (both) {
+            document.getElementById('pg-out').textContent = both.j.response || both.j.error || JSON.stringify(both.j).slice(0, 500);
+            refreshKeys();
+          }).catch(function () { document.getElementById('pg-out').textContent = 'Request failed.'; });
+      });
+      document.addEventListener('acronous:plan-active', refreshKeys);
+      refreshKeys();
+    })();
+  </script>
+</body>
+</html>

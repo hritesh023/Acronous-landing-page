@@ -1,0 +1,57 @@
+{
+  "_comment": "Single source of truth for ALL Acronous pricing. Amounts in INR per month unless noted. Checkout always goes through Razorpay orders created server-side (api.acronous.com). Secret keys NEVER ship to clients.",
+  "currency": "INR",
+  "bundle": {
+    "id": "acronous_one",
+    "label": "Acronous One",
+    "price_inr": 699,
+    "includes": ["ai_plus_monthly", "nav_ai_plus", "eq_premium"],
+    "blurb": "One subscription: Acronous AI Plus + Navigwiz AI Plus + Equyvo Premium."
+  },
+  "products": {
+    "acronous_ai": {
+      "positioning": "Pay for intelligence and compute (capability-based). Ultra is a very large allowance, never unlimited.",
+      "plans": [
+        { "id": "ai_free", "label": "Free", "price_inr": 0, "tagline": "Try Acronous", "features": ["Everyday chat allowance", "Basic web search", "Basic memory", "Community support"] },
+        { "id": "ai_starter_monthly", "label": "Starter", "price_inr": 149, "tagline": "Everyday AI", "features": ["High everyday chat allowance", "File analysis", "Image generation", "Voice", "Basic memory", "Basic web search", "Projects/workspaces"] },
+        { "id": "ai_plus_monthly", "label": "Plus", "price_inr": 449, "tagline": "Serious users", "popular": true, "features": ["Advanced reasoning", "Larger context", "More files", "More image generation", "Deep research", "Advanced memory", "Voice", "Multimodal", "AI projects", "Higher limits"] },
+        { "id": "ai_pro_monthly", "label": "Pro", "price_inr": 999, "tagline": "Power users", "features": ["Much higher limits", "Premium models", "Advanced agents", "Deep research", "Large documents", "Advanced image generation", "Automation", "Priority compute", "API credits included"] },
+        { "id": "ai_ultra_monthly", "label": "Ultra", "price_inr": 2499, "tagline": "Heavy professional use", "features": ["Very high usage allowance (not unlimited)", "Highest models", "Long-running agents", "Large research workloads", "Large context", "Extensive multimodal usage", "Large image-generation allowance", "API/automation credits", "Priority infrastructure"] },
+        { "id": "ai_enterprise", "label": "Enterprise", "price_inr": null, "tagline": "Teams/business", "features": ["Custom limits", "SSO & audit", "Dedicated support", "Custom DPAs"] }
+      ]
+    },
+    "navigwiz": {
+      "positioning": "Browser is free. Users pay for AI work performed on the web (intelligence/task-based).",
+      "plans": [
+        { "id": "nav_browser", "label": "Browser", "price_inr": 0, "tagline": "Full browser, free", "features": ["Tabs", "Private Space", "Bookmarks", "History", "Downloads", "Extensions", "Sync", "Basic search", "Basic AI assistance"] },
+        { "id": "nav_ai_starter", "label": "AI Starter", "price_inr": 99, "tagline": "AI browsing", "features": ["AI search", "Page summarization", "Basic voice", "Page Q&A", "Basic file analysis", "Limited AI research", "Basic memory"] },
+        { "id": "nav_ai_plus", "label": "AI Plus", "price_inr": 299, "tagline": "Advanced browsing", "popular": true, "features": ["Multi-page research", "PDF analysis", "Advanced search", "Workspace memory", "Voice", "Camera analysis", "File/folder intelligence", "Compare websites", "Research summaries", "More AI tasks"] },
+        { "id": "nav_ai_pro", "label": "AI Pro", "price_inr": 699, "tagline": "Agentic research", "features": ["Agentic browsing", "Deep research", "Multi-step tasks", "Data extraction", "Web scraping", "Structured reports", "Automated research", "Large document processing", "Advanced workspaces", "Persistent project context"] },
+        { "id": "nav_ai_ultra", "label": "AI Ultra", "price_inr": 1499, "tagline": "Heavy professional use", "features": ["Very high task allowance", "Long-running agents", "Scheduled research", "Large-scale extraction", "Complex web workflows", "Advanced automation", "API access", "Priority processing"] },
+        { "id": "nav_business", "label": "Business", "price_inr": null, "tagline": "Teams", "features": ["Everything in AI Ultra", "Team workspaces", "Admin controls", "Priority support"] }
+      ]
+    },
+    "equyvo": {
+      "positioning": "Network growth first. Most users stay free. Monetize via premium experience + creators.",
+      "plans": [
+        { "id": "eq_free", "label": "Free", "price_inr": 0, "tagline": "Everyone", "features": ["Posts", "Videos", "Photos", "Moments", "Thoughts", "Communities", "Messaging", "Following", "Discovery", "Basic creator tools", "Basic storage", "Basic analytics"] },
+        { "id": "eq_plus", "label": "Plus", "price_inr": 49, "tagline": "Enhanced user", "features": ["More storage", "Enhanced customization", "Better privacy controls", "Ad-light experience", "Higher media limits", "Profile customization", "Better discovery controls"] },
+        { "id": "eq_premium", "label": "Premium", "price_inr": 149, "tagline": "Power user", "popular": true, "features": ["Ad-free", "Higher-quality uploads", "More storage", "Advanced profile customization", "Advanced privacy", "Advanced analytics", "AI content tools", "Priority processing"] },
+        { "id": "eq_creator", "label": "Creator", "price_inr": 399, "tagline": "Creator", "popular_creator": true, "features": ["Creator analytics", "Audience insights", "AI captions", "AI content generation", "AI thumbnails", "Scheduling", "Higher storage", "4K media", "Subscriber tools", "Monetization tools", "Creator marketplace"] },
+        { "id": "eq_creator_pro", "label": "Creator Pro", "price_inr": 799, "tagline": "Professional creator", "features": ["Huge storage", "Advanced analytics", "AI editing", "Automated content workflows", "Multiple profiles/pages", "Team collaboration", "Brand collaboration tools", "API access", "Advanced monetization"] },
+        { "id": "eq_business", "label": "Business", "price_inr": null, "tagline": "Brands/businesses", "features": ["Everything in Creator Pro", "Brand suite", "Ads manager", "Dedicated support"] }
+      ]
+    }
+  },
+  "api_packs": {
+    "_comment": "One-time prepaid credits for api.acronous.com (Acronous AI brain as an API). 1 credit ~= 1K chat tokens. Images ~20 credits, video ~50. Credits never expire for 12 months.",
+    "packs": [
+      { "id": "api_pack_99", "label": "API Starter", "price_inr": 99, "credits": 1000 },
+      { "id": "api_pack_499", "label": "API Growth", "price_inr": 499, "credits": 6000 },
+      { "id": "api_pack_999", "label": "API Scale", "price_inr": 999, "credits": 14000 },
+      { "id": "api_pack_2499", "label": "API Business", "price_inr": 2499, "credits": 40000 }
+    ],
+    "metering": { "chat_per_1k_tokens": 1, "image_generate": 20, "video_generate": 50, "web_search": 1, "min_per_request": 1 },
+    "subscription_grants": { "ai_plus_monthly": 2000, "ai_pro_monthly": 10000, "ai_ultra_monthly": 40000, "acronous_one": 2000 }
+  }
+}

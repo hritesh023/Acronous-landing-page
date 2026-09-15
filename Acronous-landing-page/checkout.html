@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Acronous</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .co-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:calc(var(--nav-height) + 24px) 24px 48px}
+    .co-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:40px 36px;max-width:440px;width:100%;text-align:center}
+    .co-card h1{font-size:1.4rem;margin:18px 0 8px}
+    .co-card p{color:var(--text-secondary);font-size:14px}
+    .co-spin{width:44px;height:44px;border:3px solid var(--border-color);border-top-color:var(--accent-1);border-radius:50%;margin:0 auto;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .co-ok{font-size:52px}
+    .co-plan{margin-top:10px;display:inline-block;background:rgba(99,102,241,.12);border:1px solid var(--border-color);border-radius:999px;padding:6px 18px;font-size:13px;font-weight:600}
+    .co-actions{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <main class="co-wrap">
+    <div class="co-card" id="co-card">
+      <div class="co-spin" id="co-spin"></div>
+      <h1 id="co-title">Preparing secure checkout…</h1>
+      <p id="co-sub">Contacting Razorpay via our server. Card and UPI details never touch Acronous.</p>
+      <div><span class="co-plan" id="co-plan"></span></div>
+      <div class="co-actions" id="co-actions" style="display:none"></div>
+    </div>
+  </main>
+  <script src="js/billing-client.js"></script>
+  <script>
+    (function () {
+      var B = window.AcronousBilling;
+      var q = new URLSearchParams(location.search);
+      var plan = q.get('plan') || '';
+      document.getElementById('co-plan').textContent = plan ? B.planLabel(plan) : '';
+      function done(ok, title, sub) {
+        document.getElementById('co-spin').style.display = 'none';
+        document.getElementById('co-title').textContent = title;
+        document.getElementById('co-sub').textContent = sub;
+        var acts = document.getElementById('co-actions');
+        acts.style.display = 'flex';
+        if (ok) {
+          document.querySelector('.co-card').insertAdjacentHTML('afterbegin', '<div class="co-ok">✓</div>');
+          acts.innerHTML = '<a class="btn btn-primary" href="/pricing.html">Back to pricing</a>';
+          try { if (window.opener) window.close(); } catch (e) {}
+        } else {
+          acts.innerHTML = '<button class="btn btn-primary" id="co-retry">Try again</button><a class="btn btn-outline" href="/pricing.html">All plans</a>';
+          document.getElementById('co-retry').addEventListener('click', function () { location.reload(); });
+        }
+      }
+      if (!plan) { done(false, 'No plan selected', 'Pick a plan on the pricing page first.'); return; }
+      B.buy(plan).then(
+        function () { done(true, 'Payment verified', 'Your plan is active in all your Acronous apps. You can close this tab.'); },
+        function (e) {
+          if (e && e.message === 'signin_required') return; // login redirect in progress
+          if (e && e.message === 'payment_cancelled') { done(false, 'Checkout closed', 'No charge was made. You can retry anytime.'); return; }
+          done(false, 'Payment failed', (e && e.message) || 'Please try again.');
+        });
+    })();
+  </script>
+</body>
+</html>
