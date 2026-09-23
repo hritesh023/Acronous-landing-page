@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -282,6 +283,124 @@ app.get('/logout', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', users: loadUsers().length });
+});
+
+// ── Razorpay Standard Checkout (local dev + self-host fallback) ──────────
+// Production traffic uses the central billing worker (api.acronous.com) with
+// the same paths. The KEY_SECRET never leaves this server: browsers receive
+// only key_id + order_id, then return payment_id + signature for verification.
+//   POST /api/create-order  {plan} | {amount (paise), currency?, receipt?}
+//   POST /api/verify-payment {razorpay_order_id, razorpay_payment_id, razorpay_signature}
+const Razorpay = require('razorpay');
+const PAYMENTS_LEDGER = path.join(__dirname, 'verified-payments.json');
+
+function billingKeys() {
+  const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+  if (!keyId || !keySecret) return null;
+  return { keyId, keySecret };
+}
+
+// Single source of truth: Acronous-landing-page/billing/plans.json.
+// Returns price in INR, 0 for free plans, null for custom/unknown.
+function planPriceInr(planId) {
+  try {
+    const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'billing', 'plans.json'), 'utf-8'));
+    if (catalog.bundle && catalog.bundle.id === planId) return catalog.bundle.price_inr;
+    for (const product of Object.values(catalog.products || {})) {
+      const found = (product.plans || []).find((p) => p.id === planId);
+      if (found) return found.price_inr;
+    }
+    const pack = ((catalog.api_packs || {}).packs || []).find((p) => p.id === planId);
+    if (pack) return pack.price_inr;
+  } catch (e) {
+    console.error('Billing catalog read error:', e.message);
+  }
+  return null;
+}
+
+function billingAuth(req, res, next) {
+  const token = req.cookies?.[TOKEN_NAME] || req.headers.authorization?.replace('Bearer ', '');
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ error: 'Please sign in to continue.' });
+  }
+  req.user = decoded;
+  next();
+}
+
+app.post(['/api/create-order', '/v1/billing/order'], billingAuth, async (req, res) => {
+  try {
+    const keys = billingKeys();
+    if (!keys) {
+      return res.status(503).json({ error: 'Billing is not configured yet. Please try again later.' });
+    }
+    const { plan, amount: rawAmount, currency = 'INR', receipt: rawReceipt } = req.body || {};
+    let amount;
+    let planLabel = typeof plan === 'string' ? plan.slice(0, 64) : 'one_time';
+    if (plan) {
+      const priceInr = planPriceInr(plan);
+      if (priceInr === null) {
+        return res.status(400).json({ error: 'Unknown plan.' });
+      }
+      if (!priceInr || priceInr <= 0) {
+        return res.status(400).json({ error: 'That plan is free or custom — no online payment needed.' });
+      }
+      amount = Math.round(priceInr * 100);
+    } else {
+      amount = Math.floor(Number(rawAmount));
+      if (!Number.isFinite(amount) || amount < 100) {
+        return res.status(400).json({ error: 'Amount must be an integer >= 100 paise.' });
+      }
+    }
+    const receipt = String(rawReceipt || `acro_${Date.now().toString(36)}`).slice(0, 40);
+    const rzp = new Razorpay({ key_id: keys.keyId, key_secret: keys.keySecret });
+    const order = await rzp.orders.create({
+      amount,
+      currency: String(currency || 'INR').toUpperCase().slice(0, 3) || 'INR',
+      receipt,
+      notes: { user: req.user.email || req.user.id, plan: planLabel },
+    });
+    return res.json({ order_id: order.id, amount: order.amount, currency: order.currency, key_id: keys.keyId });
+  } catch (e) {
+    const status = e && (e.statusCode || e.status);
+    if (status === 401 || status === 403) {
+      console.error('Razorpay auth failure:', e.message);
+      return res.status(401).json({ error: 'Billing authentication failed.' });
+    }
+    console.error('Create-order error:', e && e.message);
+    return res.status(500).json({ error: 'Could not create a payment order. Please try again.' });
+  }
+});
+
+app.post(['/api/verify-payment', '/v1/billing/verify'], billingAuth, (req, res) => {
+  const keys = billingKeys();
+  if (!keys) {
+    return res.status(503).json({ error: 'Billing is not configured yet. Please try again later.' });
+  }
+  const { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
+  if (!orderId || !paymentId || !signature) {
+    return res.status(400).json({ ok: false, error: 'Missing payment fields.' });
+  }
+  const expected = crypto
+    .createHmac('sha256', keys.keySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(String(signature), 'utf8');
+  const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!match) {
+    // Signature mismatch: do NOT record anything as paid.
+    return res.status(400).json({ ok: false, error: 'Signature mismatch.' });
+  }
+  try {
+    const ledger = fs.existsSync(PAYMENTS_LEDGER) ? JSON.parse(fs.readFileSync(PAYMENTS_LEDGER, 'utf-8')) : [];
+    ledger.push({ order_id: orderId, payment_id: paymentId, user: req.user.email || req.user.id, ts: new Date().toISOString() });
+    fs.writeFileSync(PAYMENTS_LEDGER, JSON.stringify(ledger, null, 2));
+  } catch (e) {
+    console.error('Payments ledger write error:', e.message);
+  }
+  return res.json({ ok: true });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

@@ -72,10 +72,15 @@ hand: the worker creates Razorpay **orders** on demand with the right amount.
 
 ## 5. Go live (launch checklist)
 
-- [ ] KYC activated, **Live mode** on.
-- [ ] Live keys generated; `RAZORPAY_KEY_ID = "rzp_live_…"` in `wrangler.toml`,
-      live secret via `wrangler secret put`; worker redeployed.
-- [ ] Live webhook created (same URL/events) with its own secret stored.
+- [x] KYC activated, **Live mode** on.
+- [x] Live keys generated; `RAZORPAY_KEY_ID = "rzp_live_TdBXy92OTOoIeh"` in `wrangler.toml`,
+      live secret uploaded via `wrangler secret put` (verified 2026-09-17: live
+      ₹1 order created successfully). Activate on the worker by updating the
+      `RAZORPAY_KEY_ID` variable (dashboard → Worker → Settings → Variables)
+      or redeploying. Deployed live 2026-09-17 (version 4264776a): live order
+      creation verified (`/v1/billing/order` → 200) plus new `/api/*` aliases.
+- [x] Live webhook created (same URL/events) with its own secret stored —
+      verified live: signed test event → 200, bad signature → 401.
 - [ ] Payment methods ON in **Live** (they reset between modes).
 - [ ] One real ₹99/₹149 purchase (Navigwiz AI Starter or AI Starter) on your
       own account → verify grant → refund it from **Payments → Refund** to

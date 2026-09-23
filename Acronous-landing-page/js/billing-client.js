@@ -16,9 +16,11 @@
   var API_BASE = 'https://api.acronous.com';
   try {
     var h = window.location.hostname || '';
-    // Local dev: the auth-server + Acronous AI worker run on localhost ports.
+    // Local dev: the auth-server (port 3001) serves billing alongside auth.
+    // Override with window.__ACRONOUS_API_BASE__ to target any other backend
+    // (e.g. the Navigwiz FastAPI dev server on :8000, or wrangler dev).
     if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost')) {
-      API_BASE = window.__ACRONOUS_API_BASE__ || 'http://127.0.0.1:8000';
+      API_BASE = window.__ACRONOUS_API_BASE__ || 'http://127.0.0.1:3001';
     }
   } catch (e) {}
 
