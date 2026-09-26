@@ -349,19 +349,27 @@ ul{list-style:none}
 }
 .cta-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 
-/* Footer */
+/* Footer — full-bleed band, flexible inner grid that fills phones,
+   foldables, tablets, desktops and external/ultrawide displays. */
 .footer{
-  padding:80px 0 40px;
+  width:100%;max-width:none;
+  padding:80px 0 calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-left:env(safe-area-inset-left, 0px);
+  padding-right:env(safe-area-inset-right, 0px);
   border-top:1px solid var(--border-color)
 }
+.footer-container{width:100%;max-width:min(var(--max-width), 100% - 48px)}
 .footer-main{
-  display:flex;justify-content:space-between;
-  gap:60px;margin-bottom:60px
+  display:grid;grid-template-columns:minmax(220px, 1.2fr) 2fr;
+  gap:48px;margin-bottom:60px
 }
-.footer-brand{max-width:300px}
+.footer-brand{max-width:300px;min-width:0}
 .footer-logo{height:32px;width:auto;margin-bottom:12px}
 .footer-tagline{font-size:14px;color:var(--text-muted);line-height:1.6}
-.footer-links{display:flex;gap:60px}
+.footer-links{
+  display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:32px;min-width:0
+}
 .footer-group{display:flex;flex-direction:column;gap:12px}
 .footer-heading{
   font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
@@ -420,8 +428,8 @@ ul{list-style:none}
   .hero-actions{flex-direction:column;align-items:center}
   .btn{width:100%;justify-content:center}
   .products,.vision,.cta{padding:80px 0}
-  .footer-main{flex-direction:column;gap:40px}
-  .footer-links{flex-direction:column;gap:32px}
+  .footer-main{grid-template-columns:1fr;gap:40px}
+  .footer-links{grid-template-columns:1fr;gap:32px}
   .vision-stats{flex-direction:column;align-items:center;gap:24px}
   .visual-grid{width:240px;height:240px}
 }
@@ -429,4 +437,30 @@ ul{list-style:none}
   .hero-title{font-size:1.8rem}
   .hero-logo{height:48px}
   .product-card{padding:32px 24px}
+}
+
+/* ── Flexible fill for every display size ──────────────────────────── */
+/* Notched / curved phones: navbar + footer respect display cutouts. */
+.navbar{
+  padding-left:env(safe-area-inset-left, 0px);
+  padding-right:env(safe-area-inset-right, 0px);
+}
+/* Dynamic viewport: hero fills the visible area exactly when the mobile
+   URL bar shows/hides; min-height (not fixed) so content can still grow. */
+.hero{min-height:100vh;min-height:100dvh}
+/* Foldables + small tablets: 2-column footer instead of stacking too early. */
+@media(min-width:769px) and (max-width:1024px){
+  .footer-main{grid-template-columns:1fr 1fr;gap:40px}
+  .footer-links{grid-template-columns:repeat(3, minmax(0, 1fr));gap:24px}
+}
+/* Large external / ultrawide displays: let the band breathe wider while the
+   background still spans edge to edge. */
+@media(min-width:1600px){
+  :root{--max-width:1400px}
+}
+/* Short landscape screens: slimmer footer so content keeps the viewport. */
+@media(max-height:500px) and (orientation:landscape){
+  .footer{padding:48px 0 calc(24px + env(safe-area-inset-bottom, 0px))}
+  .footer-main{margin-bottom:32px}
+  .hero-content{padding:48px 0 40px}
 }

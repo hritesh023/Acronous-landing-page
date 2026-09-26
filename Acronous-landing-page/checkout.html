@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Checkout — Acronous</title>
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .co-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:calc(var(--nav-height) + 24px) 24px 48px}
+    .co-wrap{min-height:100vh;min-height:100dvh;width:100%;display:flex;align-items:center;justify-content:center;padding:calc(var(--nav-height) + 24px) 24px calc(48px + env(safe-area-inset-bottom, 0px));padding-left:max(24px, env(safe-area-inset-left, 0px));padding-right:max(24px, env(safe-area-inset-right, 0px));box-sizing:border-box}
     .co-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:40px 36px;max-width:440px;width:100%;text-align:center}
     .co-card h1{font-size:1.4rem;margin:18px 0 8px}
     .co-card p{color:var(--text-secondary);font-size:14px}
