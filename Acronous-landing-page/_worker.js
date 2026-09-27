@@ -7,11 +7,33 @@ const TOKEN_NAME = 'acronous_token';
 // API routes on these subdomains are handled by their respective Workers directly
 // (via Cloudflare route matching), bypassing this proxy.
 const SUBDOMAIN_ORIGINS = {
-  'ai.acronous.com':        { spa: 'https://acronous-ai.pages.dev', api: 'https://acronous-ai.httpsacronous-landinghriteshkumarpatroworkersdev.workers.dev' },
+  'ai.acronous.com':        { spa: 'https://acronous-ai.pages.dev', api: 'https://api.acronous.com' },
   'equyvo.acronous.com':    { spa: 'https://equyvo.pages.dev', api: '' },
   // navigwiz.acronous.com now has its own dedicated auth worker
   // 'navigwiz.acronous.com':  { spa: 'https://navigwiz.pages.dev', api: '' },
 };
+
+// Central billing authority. Same-origin /v1/billing/* + /v1/api/* on
+// acronous.com are proxied here so frontend JS never hardcodes a backend
+// host and secrets stay server-side.
+const CENTRAL_BILLING = 'https://api.acronous.com';
+const BILLING_PREFIXES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment'];
+
+// First-party origins allowed to call billing/auth with credentials.
+const ALLOWED_ORIGINS = new Set([
+  'https://acronous.com',
+  'https://www.acronous.com',
+  'https://ai.acronous.com',
+  'https://equyvo.acronous.com',
+  'https://navigwiz.acronous.com',
+  'https://dashboard.acronous.com',
+]);
+
+function allowedOrigin(req) {
+  const o = req.headers.get('Origin');
+  if (!o) return 'https://acronous.com';
+  return ALLOWED_ORIGINS.has(o) ? o : 'https://acronous.com';
+}
 
 const API_PREFIXES = ['/v1/', '/api/', '/health'];
 
@@ -74,7 +96,9 @@ async function saveUser(user, env) {
 
 function corsResponse(body, status = 200, origin) {
   const headers = { 'Content-Type': 'application/json' };
-  if (origin) headers['Access-Control-Allow-Origin'] = origin;
+  // Never reflect arbitrary origins with credentials — allowlist only.
+  const o = typeof origin === 'string' && ALLOWED_ORIGINS.has(origin) ? origin : 'https://acronous.com';
+  headers['Access-Control-Allow-Origin'] = o;
   headers['Access-Control-Allow-Credentials'] = 'true';
   return new Response(JSON.stringify(body), { status, headers });
 }
@@ -85,7 +109,10 @@ function redirectResponse(location) {
 
 function setCookie(token, hostname) {
   const domain = hostname?.endsWith('acronous.com') ? 'Domain=.acronous.com; ' : '';
-  return `${TOKEN_NAME}=${token}; ${domain}Path=/; Max-Age=604800; SameSite=Lax; Secure`;
+  // HttpOnly: session cookie is never readable via document.cookie (XSS-safe).
+  // First-party apps authenticate with credentials:include or the ?token=
+  // Bearer handoff persisted to app storage at login.
+  return `${TOKEN_NAME}=${token}; ${domain}Path=/; Max-Age=604800; SameSite=Lax; Secure; HttpOnly`;
 }
 
 function clearCookie(hostname) {
@@ -346,7 +373,7 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      const origin = request.headers.get('Origin') || 'https://acronous.com';
+      const origin = allowedOrigin(request);
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -354,6 +381,29 @@ export default {
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Max-Age': '86400',
       }});
+    }
+
+    // Same-origin billing proxy → central worker (hides backend host,
+    // keeps RAZORPAY_KEY_SECRET server-side). Authenticated via the
+    // caller's own Authorization/cookie headers, forwarded untouched.
+    const isBilling = BILLING_PREFIXES.some(p => url.pathname === p || url.pathname.startsWith(p));
+    if (isBilling && (LANDING_HOSTS.has(host) || host.endsWith('.acronous.com'))) {
+      const target = CENTRAL_BILLING + url.pathname + url.search;
+      const fwd = new Headers(request.headers);
+      fwd.set('Host', 'api.acronous.com');
+      try {
+        const resp = await fetch(new Request(target, {
+          method: request.method,
+          headers: fwd,
+          body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
+        }));
+        const out = new Headers(resp.headers);
+        out.set('Access-Control-Allow-Origin', allowedOrigin(request));
+        out.set('Access-Control-Allow-Credentials', 'true');
+        return new Response(resp.body, { status: resp.status, headers: out });
+      } catch {
+        return corsResponse({ error: 'Billing service unreachable. Please try again.' }, 502, allowedOrigin(request));
+      }
     }
 
     // Auth routes — handle on ANY subdomain (before proxying)

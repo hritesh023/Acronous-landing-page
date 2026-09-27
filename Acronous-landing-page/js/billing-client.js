@@ -13,14 +13,26 @@
 (function () {
   'use strict';
 
-  var API_BASE = 'https://api.acronous.com';
+  // Same-origin first: the landing server (server.js) and the edge worker
+  // (_worker.js) proxy /v1/billing/* → https://api.acronous.com, so the
+  // browser never needs to know the backend host. No secrets, no internal
+  // URLs (brain/ollama/VPS) ever appear in frontend code — only this
+  // same-origin path + Razorpay's public checkout.js.
+  var API_BASE = '';
+  var CENTRAL_FALLBACK = 'https://api.acronous.com';
   try {
     var h = window.location.hostname || '';
-    // Local dev: the auth-server (port 3001) serves billing alongside auth.
-    // Override with window.__ACRONOUS_API_BASE__ to target any other backend
-    // (e.g. the Navigwiz FastAPI dev server on :8000, or wrangler dev).
-    if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost')) {
-      API_BASE = window.__ACRONOUS_API_BASE__ || 'http://127.0.0.1:3001';
+    // Local dev without the proxy (file:// or a bare static server):
+    // allow an explicit override, else talk straight to central.
+    if (!h || h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost')) {
+      if (!window.__ACRONOUS_API_BASE__) {
+        // Probe: if same-origin /v1/billing/entitlements answers, stay
+        // same-origin (empty base). Otherwise fall back to central below
+        // on first failed call (see api()).
+        API_BASE = '';
+      } else {
+        API_BASE = window.__ACRONOUS_API_BASE__;
+      }
     }
   } catch (e) {}
 
@@ -53,16 +65,29 @@
   function api(path, opts) {
     opts = opts || {};
     opts.headers = authHeaders();
+    // httpOnly cookie auth: the session cookie (set by /api/auth/*) is sent
+    // automatically. Bearer fallback covers native/webview callers.
+    opts.credentials = 'include';
     if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
-    return fetch(API_BASE + path, opts).then(function (r) {
-      return r.json().catch(function () { return { error: 'bad_response' }; }).then(function (j) {
-        if (!r.ok) {
-          var err = new Error((j && j.error) || ('Request failed (' + r.status + ')'));
-          err.status = r.status; err.body = j;
-          throw err;
-        }
-        return j;
+    function doFetch(base) {
+      return fetch(base + path, opts).then(function (r) {
+        return r.json().catch(function () { return { error: 'bad_response' }; }).then(function (j) {
+          if (!r.ok) {
+            var err = new Error((j && (j.response || j.error)) || ('Request failed (' + r.status + ')'));
+            err.status = r.status; err.body = j;
+            throw err;
+          }
+          return j;
+        });
       });
+    }
+    // Same-origin first (hides backend host). If the static host has no
+    // billing proxy (e.g. file:// preview), retry once against central.
+    return doFetch(API_BASE).catch(function (e) {
+      if (API_BASE === '' && (e instanceof TypeError || e.status === 404)) {
+        return doFetch(CENTRAL_FALLBACK);
+      }
+      throw e;
     });
   }
 
@@ -135,6 +160,14 @@
       .catch(function (e) { setBusy(opts, false); throw e; });
   }
 
+  // Notify the whole page + dashboard listeners that entitlements changed.
+  function emitPlanActive(detail) {
+    try { localStorage.setItem('acronous_last_plan', JSON.stringify({ plan: detail && (detail.plan || detail), at: new Date().toISOString() })); } catch (e) {}
+    try {
+      document.dispatchEvent(new CustomEvent('acronous:plan-active', { detail: detail }));
+    } catch (e) {}
+  }
+
   function planLabel(plan) {
     var map = {
       ai_starter_monthly: 'Acronous AI — Starter (₹149/mo)',
@@ -195,9 +228,7 @@
         toast('Opening secure Razorpay checkout…', true);
         buy(plan, { button: btn }).then(function (v) {
           toast('Payment verified. Your plan is active.', true);
-          try {
-            document.dispatchEvent(new CustomEvent('acronous:plan-active', { detail: v }));
-          } catch (e) {}
+          emitPlanActive(v && v.plan ? v : { plan: plan, verify: v });
         }).catch(function (e) {
           if (e && e.message === 'payment_cancelled') { toast('Payment window closed. No charge was made.'); return; }
           if (e && e.message === 'signin_required') return;
@@ -207,7 +238,63 @@
     });
   }
 
-  window.AcronousBilling = { buy: buy, status: status, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE; } };
+  // ── Paywall: every 402 in the ecosystem redirects to pricing ──────────
+  // Backend contract: HTTP 402 + {type:'paywall'} or {error:
+  // 'quota_exceeded'|'out_of_credits'|'QUOTA_*'} with optional
+  // {upgrade_url, product, plan}. Call handlePaywall(err) after ANY API
+  // call; it returns the upgrade URL when it handled the error, else null.
+  var PRODUCT_TAB = { acronous_ai: 'ai', navigwiz: 'nav', equyvo: 'eq', bundle: 'one', api: 'api' };
+
+  function isPaywall(err) {
+    if (!err) return false;
+    if (err.status === 402) return true;
+    var b = err.body || err;
+    if (b && (b.type === 'paywall' || b.error === 'out_of_credits' || b.error === 'quota_exceeded')) return true;
+    var code = b && (b.code || b.error);
+    if (typeof code === 'string' && code.indexOf('QUOTA_') === 0) return true;
+    return false;
+  }
+
+  function upgradeUrl(err, fallbackProduct) {
+    var b = (err && err.body) || {};
+    if (b.upgrade_url) return b.upgrade_url;
+    var product = b.product || fallbackProduct || 'acronous_ai';
+    var map = {
+      acronous_ai: 'https://acronous.com/pricing.html#ai',
+      navigwiz: 'https://acronous.com/pricing.html#nav',
+      equyvo: 'https://acronous.com/pricing.html#eq',
+      bundle: 'https://acronous.com/pricing.html#one',
+      api: 'https://acronous.com/api.html#packs',
+    };
+    if (b.api_credits) return map.api;
+    return map[product] || map.acronous_ai;
+  }
+
+  function redirectToPricing(err, fallbackProduct) {
+    var url = upgradeUrl(err, fallbackProduct);
+    try {
+      // Same-site navigation keeps the pending-plan resume working.
+      window.location.href = url;
+    } catch (e) {}
+    return url;
+  }
+
+  function handlePaywall(err, opts) {
+    if (!isPaywall(err)) return null;
+    opts = opts || {};
+    try {
+      document.dispatchEvent(new CustomEvent('acronous:paywall', { detail: { body: err.body || null, status: err.status || 402 } }));
+    } catch (e) {}
+    if (opts.noRedirect) return upgradeUrl(err, opts.product);
+    // Small delay so the caller can toast the reason first.
+    var url = upgradeUrl(err, opts.product);
+    setTimeout(function () {
+      try { window.location.href = url; } catch (e) {}
+    }, opts.delayMs != null ? opts.delayMs : 1200);
+    return url;
+  }
+
+  window.AcronousBilling = { buy: buy, status: status, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE || CENTRAL_FALLBACK; }, isPaywall: isPaywall, upgradeUrl: upgradeUrl, redirectToPricing: redirectToPricing, handlePaywall: handlePaywall, productTab: PRODUCT_TAB };
   document.addEventListener('DOMContentLoaded', function () {
     wireButtons(document);
     // Resume a purchase that was interrupted by the sign-in redirect.

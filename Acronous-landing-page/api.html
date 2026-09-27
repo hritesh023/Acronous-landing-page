@@ -156,6 +156,13 @@ console.log((await r.json()).response);</code></pre></div>
         fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }) })
           .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
           .then(function (both) {
+            if (both.s === 402) {
+              document.getElementById('pg-out').textContent = both.j.response || 'Out of API credits.';
+              B.toast('Out of credits — taking you to credit packs…');
+              B.handlePaywall({ status: 402, body: both.j }, { product: 'api', delayMs: 1500 });
+              refreshKeys();
+              return;
+            }
             document.getElementById('pg-out').textContent = both.j.response || both.j.error || JSON.stringify(both.j).slice(0, 500);
             refreshKeys();
           }).catch(function () { document.getElementById('pg-out').textContent = 'Request failed.'; });

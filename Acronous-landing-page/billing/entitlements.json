@@ -1,0 +1,44 @@
+{
+  "_comment": "UNIFIED ENTITLEMENT CONTRACT — what each paid plan actually unlocks. Single source of truth alongside billing/plans.json. Central billing (api.acronous.com worker + auth-server) enforces these limits; frontends only display them and redirect to pricing on HTTP 402. Amounts must match plans.json. Never put secrets here.",
+  "version": 1,
+  "currency": "INR",
+  "upgrade_urls": {
+    "acronous_ai": "https://acronous.com/pricing.html#ai",
+    "navigwiz": "https://acronous.com/pricing.html#nav",
+    "equyvo": "https://acronous.com/pricing.html#eq",
+    "bundle": "https://acronous.com/pricing.html#one",
+    "api": "https://acronous.com/api.html#packs"
+  },
+  "acronous_ai": {
+    "free": { "plan": "ai_free", "price_inr": 0, "chat_per_day": 20, "images_per_day": 3, "videos_per_day": 1, "files_per_day": 5, "max_file_mb": 10, "models": ["standard"], "api_credits_monthly": 0, "features": ["Everyday chat allowance", "Basic web search", "Basic memory"] },
+    "ai_starter_monthly": { "price_inr": 149, "chat_per_day": 200, "images_per_day": 20, "videos_per_day": 3, "files_per_day": 20, "max_file_mb": 25, "models": ["standard"], "api_credits_monthly": 0, "features": ["High everyday chat allowance", "File analysis (25MB, 20/day)", "Image generation (20/day)", "Voice", "Basic memory & web search", "Projects/workspaces"] },
+    "ai_plus_monthly": { "price_inr": 449, "chat_per_day": 1000, "images_per_day": 100, "videos_per_day": 10, "files_per_day": 100, "max_file_mb": 100, "models": ["standard", "advanced-reasoning"], "api_credits_monthly": 2000, "features": ["Advanced reasoning", "Larger context", "More files & images", "Deep research", "Advanced memory & voice", "Multimodal + AI projects"] },
+    "ai_pro_monthly": { "price_inr": 999, "chat_per_day": 5000, "images_per_day": 300, "videos_per_day": 30, "files_per_day": 300, "max_file_mb": 250, "models": ["standard", "advanced-reasoning", "premium"], "api_credits_monthly": 10000, "features": ["Much higher limits", "Premium models", "Advanced agents", "Large documents", "Automation + priority compute", "API credits included"] },
+    "ai_ultra_monthly": { "price_inr": 2499, "chat_per_day": 20000, "images_per_day": 1000, "videos_per_day": 100, "files_per_day": 1000, "max_file_mb": 500, "models": ["standard", "advanced-reasoning", "premium", "highest"], "api_credits_monthly": 40000, "features": ["Very high allowance (never unlimited)", "Highest models", "Long-running agents", "Priority infrastructure"] }
+  },
+  "navigwiz": {
+    "free": { "plan": "nav_browser", "price_inr": 0, "ai_tasks_per_day": 10, "research_per_day": 3, "page_qa_per_day": 20, "file_analysis_per_day": 3, "max_file_mb": 10, "features": ["Full browser free", "Basic search + basic AI assistance"] },
+    "nav_ai_starter": { "price_inr": 99, "ai_tasks_per_day": 100, "research_per_day": 20, "page_qa_per_day": 200, "file_analysis_per_day": 20, "max_file_mb": 25, "features": ["AI search", "Page summarization", "Basic voice & page Q&A", "Basic file analysis"] },
+    "nav_ai_plus": { "price_inr": 299, "ai_tasks_per_day": 500, "research_per_day": 100, "page_qa_per_day": 1000, "file_analysis_per_day": 100, "max_file_mb": 100, "features": ["Multi-page research & PDF analysis", "Advanced search + workspace memory", "Voice & camera analysis", "Compare websites"] },
+    "nav_ai_pro": { "price_inr": 699, "ai_tasks_per_day": 2000, "research_per_day": 400, "page_qa_per_day": 5000, "file_analysis_per_day": 400, "max_file_mb": 250, "features": ["Agentic browsing & deep research", "Multi-step tasks & extraction", "Structured reports & automation"] },
+    "nav_ai_ultra": { "price_inr": 1499, "ai_tasks_per_day": 8000, "research_per_day": 1500, "page_qa_per_day": 20000, "file_analysis_per_day": 1500, "max_file_mb": 500, "features": ["Very high task allowance", "Long-running agents & scheduled research", "API access + priority processing"] }
+  },
+  "equyvo": {
+    "free": { "plan": "eq_free", "price_inr": 0, "storage_gb": 5, "max_upload_mb": 20, "max_video_sec": 60, "monthly_uploads": 100, "quality": "standard", "ads": "full", "ai_tools": false, "analytics": "basic" },
+    "eq_plus": { "price_inr": 49, "storage_gb": 50, "max_upload_mb": 100, "max_video_sec": 180, "monthly_uploads": 500, "quality": "standard", "ads": "light", "ai_tools": false, "analytics": "basic" },
+    "eq_premium": { "price_inr": 149, "storage_gb": 250, "max_upload_mb": 500, "max_video_sec": 600, "monthly_uploads": 2000, "quality": "high", "ads": "none", "ai_tools": true, "analytics": "advanced" },
+    "eq_creator": { "price_inr": 399, "storage_gb": 500, "max_upload_mb": 1024, "max_video_sec": 1800, "monthly_uploads": 5000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "creator", "monetization": true },
+    "eq_creator_pro": { "price_inr": 799, "storage_gb": 1024, "max_upload_mb": 2048, "max_video_sec": 7200, "monthly_uploads": 20000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "advanced-creator", "monetization": true, "api_access": true }
+  },
+  "bundle": {
+    "acronous_one": { "price_inr": 699, "grants": ["ai_plus_monthly", "nav_ai_plus", "eq_premium"], "api_credits_monthly": 2000, "blurb": "One bill: AI Plus + Navigwiz AI Plus + Equyvo Premium." }
+  },
+  "api_packs": {
+    "api_pack_99": { "price_inr": 99, "credits": 1000 },
+    "api_pack_499": { "price_inr": 499, "credits": 6000 },
+    "api_pack_999": { "price_inr": 999, "credits": 14000 },
+    "api_pack_2499": { "price_inr": 2499, "credits": 40000 },
+    "metering": { "chat_per_1k_tokens": 1, "image_generate": 20, "video_generate": 50, "web_search": 1, "min_per_request": 1 },
+    "valid_months": 12
+  }
+}

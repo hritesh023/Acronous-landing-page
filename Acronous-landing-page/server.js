@@ -16,6 +16,10 @@ const SITES = {
 
 // Auth routes that should be proxied to the auth server on ANY hostname
 const AUTH_ROUTES = ['/api/auth/', '/login', '/signup', '/dashboard', '/logout', '/health'];
+// Billing routes served same-origin (hides the backend host from frontend
+// JS). Locally they hit the auth-server fallback; in production _worker.js
+// proxies them to the central billing worker (api.acronous.com).
+const BILLING_ROUTES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status'];
 
 // Always redirect these hosts to acronous.com
 const REDIRECT_HOSTS = new Set([
@@ -95,7 +99,10 @@ http.createServer((req, res) => {
   const isAuthRoute = AUTH_ROUTES.some(route =>
     reqPath === route || reqPath.startsWith(route)
   );
-  if (isAuthRoute) {
+  const isBillingRoute = BILLING_ROUTES.some(route =>
+    reqPath === route || reqPath.startsWith(route)
+  );
+  if (isAuthRoute || isBillingRoute) {
     return proxyToAuth(req, res);
   }
 
