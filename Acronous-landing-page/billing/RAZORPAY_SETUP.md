@@ -6,6 +6,27 @@ place to reconcile. The catalog lives in `billing/plans.json`; the worker at
 steps below in order. Nothing in the apps needs a dashboard plan created by
 hand: the worker creates Razorpay **orders** on demand with the right amount.
 
+## Architecture (2026-09)
+
+```
+acronous.com (pricing.html)
+  └─ js/billing-client.js → POST /v1/billing/order (same-origin)
+       └─ _worker.js proxy → api.acronous.com (central worker)
+            └─ Razorpay orders.create({amount, notes:{user, plan}})
+                 └─ Browser opens Razorpay Checkout
+                      └─ POST /v1/billing/verify (HMAC + order binding)
+                           └─ KV grant: sub:<product>:<quotaId>
+```
+
+**Key points:**
+- Secret (`RAZORPAY_KEY_SECRET`) never leaves the central worker.
+- Browsers only see `key_id` + `order_id` per order.
+- `verify` fetches the Razorpay order and binds amount + plan + user (no replay).
+- Webhook (`payment.captured` / `order.paid`) is the safety net for closed browsers.
+- All apps (Acronous AI, Equyvo, Navigwiz) use the same central billing.
+- Entitlements contract: `billing/entitlements.json` (public tier quotas).
+- Paywall: HTTP 402 + `{type:'paywall', upgrade_url}` → every app redirects to pricing.
+
 ## 0. Account + activation (do first, blocks real money)
 
 1. Finish **KYC / activation** (Home → Activate). Until activation is complete
@@ -53,7 +74,7 @@ hand: the worker creates Razorpay **orders** on demand with the right amount.
    - **UPI**: use `success@razorpay` (verifies without a real collect request).
    - **Card**: `4111 1111 1111 1111`, any future expiry, any CVV.
 3. After payment the page calls `/v1/billing/verify` → you should see
-   “Payment verified”. Confirm in dashboard: **Payments** tab shows the test
+   "Payment verified". Confirm in dashboard: **Payments** tab shows the test
    payment with receipt `acro_…` and notes `user=u:… plan=ai_plus_monthly`.
 4. Confirm entitlement: `GET /v1/billing/status?product=acronous_ai` (same
    user) shows the subscription. Close-the-browser-mid-payment case is covered
@@ -69,6 +90,8 @@ hand: the worker creates Razorpay **orders** on demand with the right amount.
 2. The worker verifies `X-Razorpay-Signature` = HMAC-SHA256(raw body, secret)
    and grants from the order notes (`user`, `plan`). Wrong signatures are
    rejected with 401. Test from the dashboard with a sample event.
+3. Also add a webhook on `https://dashboard.acronous.com/api/webhooks/razorpay`
+   with the same secret — this powers the realtime billing dashboard.
 
 ## 5. Go live (launch checklist)
 
@@ -108,11 +131,25 @@ hand: the worker creates Razorpay **orders** on demand with the right amount.
 Amounts are **not** configured in Razorpay — the worker sends
 `amount = catalog INR × 100 paise` per order. To change a price, edit both:
 
-1. `Acronous-landing-page/billing/plans.json` (storefront source of truth), and
-2. `BILLING_CATALOG` in `Acronous Ai/cloudflare-worker.js`,
-3. then mirror the numbers in `pricing.html`, `api.html`, the Flutter
+1. `Acronous-landing-page/billing/plans.json` (storefront source of truth),
+2. `billing/entitlements.json` (tier quotas + upgrade URLs),
+3. `BILLING_CATALOG` in `Acronous Ai/cloudflare-worker.js`,
+4. then mirror the numbers in `pricing.html`, `api.html`, the Flutter
    `lib/billing/plans.dart` files, and `Equyvo/src/lib/plans.ts`.
 
 Current ladder: AI 0/149/**449**/999/2499 · Nav 0/99/**299**/699/1499 ·
 Equyvo 0/49/**149**/**399**/799 · One bundle 699 · API packs 99→1k / 499→6k /
 999→14k / 2499→40k credits.
+
+## 8. Entitlement enforcement (what each plan unlocks)
+
+| Product | Free | Paid tiers |
+|---|---|---|
+| Acronous AI | 20 chat / 3 images / 1 video per day | Starter ₹149: 200/20/3 · Plus ₹449: 1000/100/10 · Pro ₹999: 5000/300/30 · Ultra ₹2499: 20000/1000/100 |
+| Navigwiz | 10 AI tasks / 3 research per day | Starter ₹99: 100/20 · Plus ₹299: 500/100 · Pro ₹699: 2000/400 · Ultra ₹1499: 8000/1500 |
+| Equyvo | 5 GB storage, ads, basic tools | Plus ₹49: 50 GB · Premium ₹149: 250 GB, ad-free · Creator ₹399: 500 GB, 4K · Creator Pro ₹799: 1 TB |
+| API | — | Packs: 99→1k / 499→6k / 999→14k / 2499→40k credits |
+
+All quotas enforced centrally in `cloudflare-worker.js` (`TIER_QUOTAS`, `checkQuota`).
+Navigwiz agentic endpoints gated in `ai-worker/src/index.js` (`requireNavigwizPlan`).
+Equyvo quotas enforced in `functions/api/[[path]].ts` (PLAN_CATALOG).
