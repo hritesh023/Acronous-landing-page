@@ -386,8 +386,9 @@ export default {
     // Same-origin billing proxy → central worker (hides backend host,
     // keeps RAZORPAY_KEY_SECRET server-side). Authenticated via the
     // caller's own Authorization/cookie headers, forwarded untouched.
+    // Exclude api.acronous.com itself to avoid an infinite proxy loop.
     const isBilling = BILLING_PREFIXES.some(p => url.pathname === p || url.pathname.startsWith(p));
-    if (isBilling && (LANDING_HOSTS.has(host) || host.endsWith('.acronous.com'))) {
+    if (isBilling && host !== 'api.acronous.com' && (LANDING_HOSTS.has(host) || host.endsWith('.acronous.com'))) {
       const target = CENTRAL_BILLING + url.pathname + url.search;
       const fwd = new Headers(request.headers);
       fwd.set('Host', 'api.acronous.com');
@@ -451,10 +452,19 @@ export default {
       }
     }
 
-    // Unknown host → redirect to acronous.com
-    if (!LANDING_HOSTS.has(host)) {
+    // Unknown host → redirect to acronous.com.
+    // api.acronous.com is NOT handled here — it's a separate Worker
+    // (acronous-ai) that serves /v1/* directly. Don't proxy or redirect it.
+    if (!LANDING_HOSTS.has(host) && host !== 'api.acronous.com' && !SUBDOMAIN_ORIGINS[host]) {
       url.hostname = 'acronous.com';
       return redirect(url);
+    }
+
+    // api.acronous.com reaching this worker means a misrouted request.
+    // Return a clear JSON error instead of redirecting (which would 301
+    // to acronous.com and serve HTML for an API path).
+    if (host === 'api.acronous.com') {
+      return corsResponse({ error: 'API route not found on this worker. Use https://ai.acronous.com or the app directly.' }, 404, allowedOrigin(request));
     }
 
     // acronous.com — serve landing page with SPA fallback

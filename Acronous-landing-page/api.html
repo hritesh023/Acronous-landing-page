@@ -118,15 +118,22 @@ console.log((await r.json()).response);</code></pre></div>
       function needSignin() { B.toast('Please sign in first (top-right of any Acronous app, same account).'); }
       function base() { return B.getApiBase(); }
       function token() {
+        // HttpOnly cookie is not readable from JS — use localStorage first
+        // (populated at login or via ?token= handoff).
+        try {
+          var stored = localStorage.getItem('acronous_token') || localStorage.getItem('equyvo_cognito_token');
+          if (stored) return stored;
+        } catch (e) {}
+        // Fallback: try reading the cookie (works if not HttpOnly, e.g. dev)
         var m = document.cookie.match(/(?:^|;\s*)acronous_token=([^;]+)/);
         if (m) return decodeURIComponent(m[1]);
-        try { return localStorage.getItem('acronous_token'); } catch (e) { return null; }
+        return null;
       }
       document.getElementById('key-create').addEventListener('click', function () {
         var t = token();
         if (!t) { needSignin(); return; }
         var name = (document.getElementById('key-name').value || 'default').slice(0, 60);
-        fetch(base() + '/v1/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ name: name }) })
+        fetch(base() + '/v1/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ name: name }), credentials: 'include' })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             if (j.api_key) { document.getElementById('key-out').value = j.api_key; B.toast('Key created. Copy it now — it is never shown again.', true); refreshKeys(); }
@@ -138,12 +145,14 @@ console.log((await r.json()).response);</code></pre></div>
         try { document.execCommand('copy'); B.toast('Copied.', true); } catch (e) {}
       });
       function refreshKeys() {
-        var t = token(); if (!t) return;
-        fetch(base() + '/v1/api/keys', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (r) { return r.json(); }).then(function (j) {
+        var t = token();
+        var headers = { 'Authorization': 'Bearer ' + (t || '') };
+        // Also send the HttpOnly cookie automatically (web sessions).
+        fetch(base() + '/v1/api/keys', { headers: headers, credentials: 'include' }).then(function (r) { return r.json(); }).then(function (j) {
           var list = (j.keys || []).map(function (k) { return '<div>' + k.prefix + ' · ' + (k.name || '') + '</div>'; }).join('');
           document.getElementById('key-list').innerHTML = list || '<div>No keys yet.</div>';
         }).catch(function () {});
-        fetch(base() + '/v1/api/usage', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (r) { return r.json(); }).then(function (j) {
+        fetch(base() + '/v1/api/usage', { headers: headers, credentials: 'include' }).then(function (r) { return r.json(); }).then(function (j) {
           if (typeof j.api_credits === 'number') document.getElementById('credit-balance').textContent = j.api_credits.toLocaleString('en-IN');
         }).catch(function () {});
       }
@@ -153,7 +162,7 @@ console.log((await r.json()).response);</code></pre></div>
         if (!key || key.indexOf('ak_') !== 0) { B.toast('Create an API key first, then run.'); return; }
         var msg = document.getElementById('pg-msg').value || 'Hello!';
         document.getElementById('pg-out').textContent = 'Thinking… (1 credit)';
-        fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }) })
+        fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }), credentials: 'include' })
           .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
           .then(function (both) {
             if (both.s === 402) {

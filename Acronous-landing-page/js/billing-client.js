@@ -49,9 +49,15 @@
         window.history.replaceState({}, document.title, clean);
         return qt;
       }
+      // HttpOnly cookie is not readable from JS — but the browser sends it
+      // automatically with credentials:'include'. For Bearer-header flows
+      // (native apps, API clients), fall back to localStorage.
+      var stored = localStorage.getItem('acronous_token') || localStorage.getItem('equyvo_cognito_token');
+      if (stored) return stored;
+      // Last resort: try reading the cookie (works if not HttpOnly, e.g. dev)
       var m = document.cookie.match(/(?:^|;\s*)acronous_token=([^;]+)/);
       if (m) return decodeURIComponent(m[1]);
-      return localStorage.getItem('acronous_token') || localStorage.getItem('equyvo_cognito_token') || null;
+      return null;
     } catch (e) { return null; }
   }
 
@@ -294,7 +300,7 @@
     return url;
   }
 
-  window.AcronousBilling = { buy: buy, status: status, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE || CENTRAL_FALLBACK; }, isPaywall: isPaywall, upgradeUrl: upgradeUrl, redirectToPricing: redirectToPricing, handlePaywall: handlePaywall, productTab: PRODUCT_TAB };
+  window.AcronousBilling = { buy: buy, status: status, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE; }, isPaywall: isPaywall, upgradeUrl: upgradeUrl, redirectToPricing: redirectToPricing, handlePaywall: handlePaywall, productTab: PRODUCT_TAB };
   document.addEventListener('DOMContentLoaded', function () {
     wireButtons(document);
     // Resume a purchase that was interrupted by the sign-in redirect.
