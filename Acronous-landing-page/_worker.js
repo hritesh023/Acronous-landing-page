@@ -376,8 +376,8 @@ export default {
       const origin = allowedOrigin(request);
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key',
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Max-Age': '86400',
       }});
