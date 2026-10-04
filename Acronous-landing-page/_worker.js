@@ -17,7 +17,10 @@ const SUBDOMAIN_ORIGINS = {
 // acronous.com are proxied here so frontend JS never hardcodes a backend
 // host and secrets stay server-side.
 const CENTRAL_BILLING = 'https://api.acronous.com';
-const BILLING_PREFIXES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment'];
+// NOTE: must stay in sync with server.js BILLING_ROUTES. Legacy
+// /api/billing-* paths exist in older clients — proxy them too instead of
+// serving the SPA fallback (which surfaced as "bad authentication").
+const BILLING_PREFIXES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status'];
 
 // First-party origins allowed to call billing/auth with credentials.
 const ALLOWED_ORIGINS = new Set([
