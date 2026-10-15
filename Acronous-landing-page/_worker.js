@@ -20,7 +20,7 @@ const CENTRAL_BILLING = 'https://api.acronous.com';
 // NOTE: must stay in sync with server.js BILLING_ROUTES. Legacy
 // /api/billing-* paths exist in older clients — proxy them too instead of
 // serving the SPA fallback (which surfaced as "bad authentication").
-const BILLING_PREFIXES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status'];
+const BILLING_PREFIXES = ['/v1/billing', '/v1/billing/', '/v1/api/', '/v1/api', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status', '/api/billing', '/api/billing/'];
 
 // First-party origins allowed to call billing/auth with credentials.
 const ALLOWED_ORIGINS = new Set([
@@ -470,8 +470,15 @@ export default {
       return corsResponse({ error: 'API route not found on this worker. Use https://ai.acronous.com or the app directly.' }, 404, allowedOrigin(request));
     }
 
-    // acronous.com — serve landing page with SPA fallback
+    // acronous.com — serve landing page with SPA fallback.
+    // NEVER serve the SPA (home page) for API/billing misses — that is what
+    // made every payment link look like "redirect to home". Return JSON so
+    // billing-client.js can surface the real error and retry central.
     try {
+      if (url.pathname === '/v1' || url.pathname.startsWith('/v1/') ||
+          url.pathname === '/api' || url.pathname.startsWith('/api/')) {
+        return corsResponse({ error: 'Not found: ' + url.pathname + '. Billing is at /v1/billing/*.' }, 404, allowedOrigin(request));
+      }
       const response = await env.ASSETS.fetch(request);
       if (response.status === 404) {
         const indexResponse = await env.ASSETS.fetch(

@@ -77,20 +77,50 @@
     if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
     function doFetch(base) {
       return fetch(base + path, opts).then(function (r) {
-        return r.json().catch(function () { return { error: 'bad_response' }; }).then(function (j) {
-          if (!r.ok) {
-            var err = new Error((j && (j.response || j.error)) || ('Request failed (' + r.status + ')'));
-            err.status = r.status; err.body = j;
+        var ct = '';
+        try { ct = r.headers.get('content-type') || ''; } catch (e) {}
+        return r.text().then(function (txt) {
+          var j = null;
+          try { j = JSON.parse(txt); } catch (e) { j = null; }
+          // The old SPA fallback served index.html (home page) with HTTP 200
+          // for unknown API paths — that made "payment link → home page".
+          // Detect non-JSON/HTML bodies and turn them into a real error so
+          // the caller retries central instead of opening Razorpay with
+          // undefined order_id.
+          if (!j) {
+            var isHtml = /<\s*html|<\s*!doctype/i.test(txt || '') || (ct.indexOf('text/html') !== -1);
+            var err = new Error(isHtml
+              ? 'Payment service returned a page instead of an order (app update in progress). Retrying…'
+              : 'Bad payment response. Please try again.');
+            err.status = r.status === 200 ? 502 : r.status; err.body = { error: 'bad_response' };
+            err.isHtmlFallback = !!isHtml;
             throw err;
+          }
+          if (!r.ok) {
+            var err2 = new Error((j && (j.response || j.error)) || ('Request failed (' + r.status + ')'));
+            err2.status = r.status; err2.body = j;
+            throw err2;
+          }
+          // Defensive: 200 JSON without order fields is still a backend miss.
+          if (path.indexOf('/v1/billing/order') !== -1 && !(j.order_id && j.key_id)) {
+            var err3 = new Error((j && (j.response || j.error)) || 'Could not start checkout. Please try again.');
+            err3.status = r.status; err3.body = j;
+            throw err3;
           }
           return j;
         });
       });
     }
     // Same-origin first (hides backend host). If the static host has no
-    // billing proxy (e.g. file:// preview), retry once against central.
+    // billing proxy (e.g. file:// preview) OR returned an HTML fallback page,
+    // retry once against central.
     return doFetch(API_BASE).catch(function (e) {
-      if (API_BASE === '' && (e instanceof TypeError || e.status === 404)) {
+      if (API_BASE === '' && (e instanceof TypeError || e.status === 404 || e.status === 502 || e.isHtmlFallback)) {
+        // Only retry safe idempotent order/status reads, not verify (avoid double-charge confusion).
+        if (path.indexOf('/v1/billing/verify') !== -1 && e.isHtmlFallback) throw e;
+        if (e.isHtmlFallback || e.status === 404) return doFetch(CENTRAL_FALLBACK);
+        // 502 bad_response from same-origin: also try central once.
+        if (e.status === 502 && e.body && e.body.error === 'bad_response') return doFetch(CENTRAL_FALLBACK);
         return doFetch(CENTRAL_FALLBACK);
       }
       throw e;
@@ -120,7 +150,9 @@
     opts = opts || {};
     if (!getToken()) {
       // Remember the plan so checkout resumes automatically after sign-in
-      // instead of dropping the user on a generic page.
+      // instead of dropping the user on a generic page. localStorage (not
+      // sessionStorage) so it survives new-tab login redirects.
+      try { localStorage.setItem('acronous_pending_plan', plan); } catch (e) {}
       try { sessionStorage.setItem('acronous_pending_plan', plan); } catch (e) {}
       var next = opts.loginNext || (window.location.pathname + window.location.search);
       window.location.href = '/login?redirect=' + encodeURIComponent(next);
@@ -304,10 +336,17 @@
   document.addEventListener('DOMContentLoaded', function () {
     wireButtons(document);
     // Resume a purchase that was interrupted by the sign-in redirect.
+    // Skipped on checkout.html itself (its inline script already calls buy —
+    // running both double-opens Razorpay).
     try {
-      var pending = sessionStorage.getItem('acronous_pending_plan');
+      var p = window.location.pathname || '';
+      var onCheckout = p.endsWith('/checkout.html') || p === '/checkout';
+      if (onCheckout) return;
+      var pending = null;
+      try { pending = localStorage.getItem('acronous_pending_plan') || sessionStorage.getItem('acronous_pending_plan'); } catch (e) {}
       if (pending && getToken()) {
-        sessionStorage.removeItem('acronous_pending_plan');
+        try { localStorage.removeItem('acronous_pending_plan'); } catch (e) {}
+        try { sessionStorage.removeItem('acronous_pending_plan'); } catch (e) {}
         toast('Resuming your checkout…', true);
         buy(pending).then(function () {
           toast('Payment verified. Your plan is active.', true);

@@ -19,7 +19,8 @@ const AUTH_ROUTES = ['/api/auth/', '/login', '/signup', '/dashboard', '/logout',
 // Billing routes served same-origin (hides the backend host from frontend
 // JS). Locally they hit the auth-server fallback; in production _worker.js
 // proxies them to the central billing worker (api.acronous.com).
-const BILLING_ROUTES = ['/v1/billing/', '/v1/api/', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status'];
+// Must stay in sync with _worker.js BILLING_PREFIXES.
+const BILLING_ROUTES = ['/v1/billing', '/v1/billing/', '/v1/api', '/v1/api/', '/api/create-order', '/api/verify-payment', '/api/billing-webhook', '/api/billing-entitlements', '/api/billing-status', '/api/billing', '/api/billing/'];
 
 // Always redirect these hosts to acronous.com
 const REDIRECT_HOSTS = new Set([
@@ -47,6 +48,14 @@ const MIME = {
 function serveFile(siteRoot, req, res) {
   let urlPath = req.url.split('?')[0];
   if (urlPath === '/') urlPath = '/index.html';
+  // Never SPA-fallback API/billing misses to index.html (home page) — that
+  // is what made payment links "redirect to home". Return JSON instead.
+  if (urlPath === '/v1' || urlPath.startsWith('/v1/') ||
+      urlPath === '/api' || urlPath.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found: ' + urlPath }));
+    return;
+  }
   let filePath = path.join(siteRoot, urlPath);
 
   fs.stat(filePath, (err, stats) => {
