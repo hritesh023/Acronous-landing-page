@@ -96,7 +96,7 @@ acronous.com (pricing.html)
 ## 5. Go live (launch checklist)
 
 - [x] KYC activated, **Live mode** on.
-- [x] Live keys generated; `RAZORPAY_KEY_ID = "rzp_live_TdBXy92OTOoIeh"` in `wrangler.toml`,
+- [x] Live keys generated; `RAZORPAY_KEY_ID = "rzp_live_ToEDnSbCE8SJLJ"` in `wrangler.toml`,
       live secret uploaded via `wrangler secret put` (verified 2026-09-17: live
       ₹1 order created successfully). Activate on the worker by updating the
       `RAZORPAY_KEY_ID` variable (dashboard → Worker → Settings → Variables)
