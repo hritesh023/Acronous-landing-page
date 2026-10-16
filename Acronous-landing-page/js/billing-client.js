@@ -318,7 +318,6 @@
           emitPlanActive(v && v.plan ? v : { plan: plan, verify: v });
         }).catch(function (e) {
           if (e && e.message === 'payment_cancelled') { toast('Payment window closed. No charge was made.'); return; }
-          if (e && e.message === 'signin_required') return;
           toast(e && e.message ? e.message : 'Payment failed. Please try again.');
         });
       });
@@ -386,7 +385,8 @@
     wireButtons(document);
     // Claim guest purchases: paid without sign-in, now signed in with the
     // same email. One silent call per page load; no-ops when nothing waits.
-    // (Legacy interrupted-checkout resume also funnels through here.)
+    // (Skipped on checkout.html itself — its inline script already calls buy,
+    // running both would double-open Razorpay.)
     try {
       var p = window.location.pathname || '';
       var onCheckout = p.endsWith('/checkout.html') || p === '/checkout';
@@ -398,21 +398,6 @@
             try { document.dispatchEvent(new CustomEvent('acronous:plan-active', { detail: { plan: v.plan } })); } catch (e) {}
           }
           try { localStorage.removeItem('acronous_pending_claim'); } catch (e) {}
-        });
-      }
-      var pending = null;
-      try { pending = localStorage.getItem('acronous_pending_plan') || sessionStorage.getItem('acronous_pending_plan'); } catch (e) {}
-      if (pending && getToken()) {
-        try { localStorage.removeItem('acronous_pending_plan'); } catch (e) {}
-        try { sessionStorage.removeItem('acronous_pending_plan'); } catch (e) {}
-        toast('Resuming your checkout…', true);
-        buy(pending).then(function () {
-          toast('Payment verified. Your plan is active.', true);
-          try { document.dispatchEvent(new CustomEvent('acronous:plan-active', { detail: { plan: pending } })); } catch (e) {}
-        }).catch(function (e) {
-          if (e && e.message !== 'payment_cancelled' && e.message !== 'signin_required') {
-            toast(e && e.message ? e.message : 'Payment failed. Please try again.');
-          }
         });
       }
     } catch (e) {}
