@@ -54,7 +54,13 @@
       }
       if (!plan) { done(false, 'No plan selected', 'Pick a plan on the pricing page first.'); return; }
       B.buy(plan).then(
-        function () { done(true, 'Payment verified', 'Your plan is active in all your Acronous apps. You can close this tab.'); },
+        function (v) {
+          if (v && v.guest && !v.claimed) {
+            done(true, 'Payment verified', 'Sign in with ' + (v.email || 'your payment email') + ' to activate your plan in all your Acronous apps. You can close this tab.');
+          } else {
+            done(true, 'Payment verified', 'Your plan is active in all your Acronous apps. You can close this tab.');
+          }
+        },
         function (e) {
           if (e && e.message === 'signin_required') return; // login redirect in progress
           if (e && e.message === 'payment_cancelled') { done(false, 'Checkout closed', 'No charge was made. You can retry anytime.'); return; }

@@ -146,56 +146,101 @@
   // Buy a subscription plan or an API credit pack. `plan` is a catalog id
   // like 'ai_plus_monthly', 'nav_ai_plus', 'eq_creator', 'acronous_one',
   // 'api_pack_499'. Resolves to the verify response on success.
+  // NO sign-in wall: signed-out buyers pay as guests with an email. The plan
+  // links to their account when they sign in with the same email (claimed
+  // automatically on next visit, or instantly if the email owns an account).
+  function askEmail() {
+    return new Promise(function (resolve, reject) {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#14141c;border:1px solid #2a2a3a;border-radius:16px;padding:24px;max-width:380px;width:100%;color:#e0e0f0;font-family:inherit';
+      box.innerHTML = '<h3 style="margin:0 0 6px;font-size:17px">Where should we send your plan?</h3>' +
+        '<p style="margin:0 0 14px;font-size:13px;color:#9999b0">No account needed to pay. Your plan activates on this email.</p>' +
+        '<input id="ac-pay-email" type="email" placeholder="you@example.com" autocomplete="email" style="width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;border:1px solid #2a2a3a;background:#1c1c26;color:#fff;font-size:15px;outline:none">' +
+        '<div id="ac-pay-err" style="display:none;color:#f87171;font-size:12px;margin-top:8px">Enter a valid email address.</div>' +
+        '<div style="display:flex;gap:10px;margin-top:16px"><button id="ac-pay-cancel" style="flex:1;padding:11px;border-radius:10px;border:1px solid #2a2a3a;background:transparent;color:#e0e0f0;font-size:14px;cursor:pointer">Cancel</button>' +
+        '<button id="ac-pay-go" style="flex:2;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Pay securely</button></div>';
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      var input = box.querySelector('#ac-pay-email');
+      var err = box.querySelector('#ac-pay-err');
+      function close() { try { document.body.removeChild(ov); } catch (e) {} }
+      function submit() {
+        var v = (input.value || '').trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { err.style.display = 'block'; input.focus(); return; }
+        close();
+        resolve(v);
+      }
+      box.querySelector('#ac-pay-cancel').addEventListener('click', function () { close(); reject(new Error('payment_cancelled')); });
+      box.querySelector('#ac-pay-go').addEventListener('click', submit);
+      ov.addEventListener('click', function (e) { if (e.target === ov) { close(); reject(new Error('payment_cancelled')); } });
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+      setTimeout(function () { try { input.focus(); } catch (e) {} }, 50);
+    });
+  }
+
+  function claim() {
+    if (!getToken()) return Promise.resolve(null);
+    return api('/v1/billing/claim', { method: 'POST', body: {} }).catch(function () { return null; });
+  }
+
   function buy(plan, opts) {
     opts = opts || {};
-    if (!getToken()) {
-      // Remember the plan so checkout resumes automatically after sign-in
-      // instead of dropping the user on a generic page. localStorage (not
-      // sessionStorage) so it survives new-tab login redirects.
-      try { localStorage.setItem('acronous_pending_plan', plan); } catch (e) {}
-      try { sessionStorage.setItem('acronous_pending_plan', plan); } catch (e) {}
-      var next = opts.loginNext || (window.location.pathname + window.location.search);
-      window.location.href = '/login?redirect=' + encodeURIComponent(next);
-      return Promise.reject(new Error('signin_required'));
-    }
-    setBusy(opts, true);
-    return api('/v1/billing/order', { method: 'POST', body: { plan: plan } })
-      .then(function (order) { return loadRazorpay().then(function () { return order; }); })
-      .then(function (order) {
-        return new Promise(function (resolve, reject) {
-          var rzp = new window.Razorpay({
-            key: order.key_id,
-            amount: order.amount,
-            currency: order.currency || 'INR',
-            name: 'Acronous',
-            description: planLabel(plan),
-            order_id: order.order_id,
-            // UPI, cards, netbanking, wallets, EMI + international cards are
-            // enabled in the Razorpay dashboard (see RAZORPAY_SETUP.md).
-            theme: { color: '#6366f1' },
-            modal: { ondismiss: function () { setBusy(opts, false); reject(new Error('payment_cancelled')); } },
-            handler: function (resp) { resolve({ order: order, resp: resp }); },
+    function withEmail(email) {
+      var body = { plan: plan };
+      if (email) body.email = email;
+      setBusy(opts, true);
+      return api('/v1/billing/order', { method: 'POST', body: body })
+        .then(function (order) { return loadRazorpay().then(function () { return order; }); })
+        .then(function (order) {
+          return new Promise(function (resolve, reject) {
+            var rzp = new window.Razorpay({
+              key: order.key_id,
+              amount: order.amount,
+              currency: order.currency || 'INR',
+              name: 'Acronous',
+              description: planLabel(plan),
+              order_id: order.order_id,
+              prefill: email ? { email: email } : {},
+              // UPI, cards, netbanking, wallets, EMI + international cards are
+              // enabled in the Razorpay dashboard (see RAZORPAY_SETUP.md).
+              theme: { color: '#6366f1' },
+              modal: { ondismiss: function () { setBusy(opts, false); reject(new Error('payment_cancelled')); } },
+              handler: function (resp) { resolve({ order: order, resp: resp }); },
+            });
+            rzp.on('payment.failed', function (r) {
+              setBusy(opts, false);
+              reject(new Error((r && r.error && r.error.description) || 'Payment failed. No money was deducted for a failed payment.'));
+            });
+            rzp.open();
           });
-          rzp.on('payment.failed', function (r) {
-            setBusy(opts, false);
-            reject(new Error((r && r.error && r.error.description) || 'Payment failed. No money was deducted for a failed payment.'));
-          });
-          rzp.open();
-        });
-      })
-      .then(function (both) {
-        return api('/v1/billing/verify', {
-          method: 'POST',
-          body: {
+        })
+        .then(function (both) {
+          var vbody = {
             razorpay_order_id: both.resp.razorpay_order_id,
             razorpay_payment_id: both.resp.razorpay_payment_id,
             razorpay_signature: both.resp.razorpay_signature,
             plan: plan,
-          },
-        });
-      })
-      .then(function (v) { setBusy(opts, false); return v; })
-      .catch(function (e) { setBusy(opts, false); throw e; });
+          };
+          if (email) vbody.email = email;
+          return api('/v1/billing/verify', { method: 'POST', body: vbody });
+        })
+        .then(function (v) {
+          setBusy(opts, false);
+          // Signed-in buyers may have pending guest grants waiting — link them.
+          if (getToken()) { try { claim(); } catch (e) {} }
+          if (v && v.guest && !v.claimed && v.email) {
+            try { localStorage.setItem('acronous_pending_claim', v.email); } catch (e) {}
+          }
+          emitPlanActive(v && v.plan ? v : { plan: plan, verify: v });
+          return v;
+        })
+        .catch(function (e) { setBusy(opts, false); throw e; });
+    }
+    if (getToken()) return withEmail(null);
+    // Guest: straight to Razorpay after an email — never a login redirect.
+    return askEmail().then(withEmail);
   }
 
   // Notify the whole page + dashboard listeners that entitlements changed.
@@ -265,7 +310,11 @@
         var plan = btn.getAttribute('data-buy');
         toast('Opening secure Razorpay checkout…', true);
         buy(plan, { button: btn }).then(function (v) {
-          toast('Payment verified. Your plan is active.', true);
+          if (v && v.guest && !v.claimed) {
+            toast('Payment verified. Sign in with ' + (v.email || 'your payment email') + ' to activate your plan.', true);
+          } else {
+            toast('Payment verified. Your plan is active.', true);
+          }
           emitPlanActive(v && v.plan ? v : { plan: plan, verify: v });
         }).catch(function (e) {
           if (e && e.message === 'payment_cancelled') { toast('Payment window closed. No charge was made.'); return; }
@@ -332,16 +381,25 @@
     return url;
   }
 
-  window.AcronousBilling = { buy: buy, status: status, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE; }, isPaywall: isPaywall, upgradeUrl: upgradeUrl, redirectToPricing: redirectToPricing, handlePaywall: handlePaywall, productTab: PRODUCT_TAB };
+  window.AcronousBilling = { buy: buy, status: status, claim: claim, wireButtons: wireButtons, toast: toast, planLabel: planLabel, getApiBase: function () { return API_BASE; }, isPaywall: isPaywall, upgradeUrl: upgradeUrl, redirectToPricing: redirectToPricing, handlePaywall: handlePaywall, productTab: PRODUCT_TAB };
   document.addEventListener('DOMContentLoaded', function () {
     wireButtons(document);
-    // Resume a purchase that was interrupted by the sign-in redirect.
-    // Skipped on checkout.html itself (its inline script already calls buy —
-    // running both double-opens Razorpay).
+    // Claim guest purchases: paid without sign-in, now signed in with the
+    // same email. One silent call per page load; no-ops when nothing waits.
+    // (Legacy interrupted-checkout resume also funnels through here.)
     try {
       var p = window.location.pathname || '';
       var onCheckout = p.endsWith('/checkout.html') || p === '/checkout';
       if (onCheckout) return;
+      if (getToken()) {
+        claim().then(function (v) {
+          if (v && v.granted && v.granted.length) {
+            toast('Your plan is now active. Welcome back.', true);
+            try { document.dispatchEvent(new CustomEvent('acronous:plan-active', { detail: { plan: v.plan } })); } catch (e) {}
+          }
+          try { localStorage.removeItem('acronous_pending_claim'); } catch (e) {}
+        });
+      }
       var pending = null;
       try { pending = localStorage.getItem('acronous_pending_plan') || sessionStorage.getItem('acronous_pending_plan'); } catch (e) {}
       if (pending && getToken()) {
