@@ -32,6 +32,28 @@ const ALLOWED_ORIGINS = new Set([
   'https://dashboard.acronous.com',
 ]);
 
+// Extensionless page aliases — /checkout?plan=x MUST serve checkout.html
+// (Razorpay auto-checkout opened by native/desktop apps), never home page.
+// Without these, extensionless payment links 404'd into the SPA fallback.
+const PAGE_ALIASES = {
+  '/pricing': '/pricing.html',
+  '/checkout': '/checkout.html',
+  '/docs': '/docs.html',
+  '/api-docs': '/api.html',
+};
+
+// Stale/legacy payment links — redirect to real Razorpay entry points
+// instead of falling through to the home-page SPA fallback.
+const PAYMENT_REDIRECTS = {
+  '/payment': '/pricing.html',
+  '/payments': '/pricing.html',
+  '/pay': '/pricing.html',
+  '/billing': '/pricing.html',
+  '/subscribe': '/pricing.html',
+  '/upgrade': '/pricing.html',
+  '/plans': '/pricing.html',
+};
+
 function allowedOrigin(req) {
   const o = req.headers.get('Origin');
   if (!o) return 'https://acronous.com';
@@ -479,8 +501,35 @@ export default {
           url.pathname === '/api' || url.pathname.startsWith('/api/')) {
         return corsResponse({ error: 'Not found: ' + url.pathname + '. Billing is at /v1/billing/*.' }, 404, allowedOrigin(request));
       }
+      // Stale payment URLs → real Razorpay entry (pricing), never home.
+      const payDest = PAYMENT_REDIRECTS[url.pathname];
+      if (payDest) {
+        const dest = new URL(payDest, url);
+        dest.search = url.search;
+        dest.hash = url.hash;
+        return Response.redirect(dest.toString(), 301);
+      }
+      // Extensionless pages → their .html file (keeps ?plan= + #hash).
+      const alias = PAGE_ALIASES[url.pathname];
+      if (alias) {
+        const dest = new URL(alias, url);
+        dest.search = url.search;
+        dest.hash = url.hash;
+        const aliasReq = new Request(dest.toString(), request);
+        const aliasRes = await env.ASSETS.fetch(aliasReq);
+        if (aliasRes.status !== 404) return aliasRes;
+        // Fall through to SPA handling below if the .html itself is missing.
+      }
       const response = await env.ASSETS.fetch(request);
       if (response.status === 404) {
+        // SPA fallback ONLY for HTML navigations (extensionless app routes).
+        // Static-asset misses (.js/.css/.png/...) stay 404; API misses
+        // already returned JSON above. This stops payment-asset misses from
+        // silently serving home page with 200.
+        const accept = request.headers.get('Accept') || '';
+        const looksHtmlNav = request.method === 'GET' &&
+          (accept.includes('text/html') || (!accept.includes('application/json') && !/\.[a-z0-9]+$/i.test(url.pathname)));
+        if (!looksHtmlNav) return new Response('Not Found', { status: 404 });
         const indexResponse = await env.ASSETS.fetch(
           new Request(new URL('/index.html', request.url), request)
         );

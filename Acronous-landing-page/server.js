@@ -56,6 +56,17 @@ function serveFile(siteRoot, req, res) {
     res.end(JSON.stringify({ error: 'Not found: ' + urlPath }));
     return;
   }
+  // Extensionless payment pages → real Razorpay entry (keeps ?plan=).
+  const ALIASES = { '/pricing': '/pricing.html', '/checkout': '/checkout.html', '/docs': '/docs.html', '/api-docs': '/api.html' };
+  if (ALIASES[urlPath]) urlPath = ALIASES[urlPath];
+  // Stale payment links → pricing, never home.
+  const PAY_REDIRECTS = { '/payment': '/pricing.html', '/payments': '/pricing.html', '/pay': '/pricing.html', '/billing': '/pricing.html', '/subscribe': '/pricing.html', '/upgrade': '/pricing.html', '/plans': '/pricing.html' };
+  if (PAY_REDIRECTS[urlPath]) {
+    const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.writeHead(301, { Location: PAY_REDIRECTS[urlPath] + q });
+    res.end();
+    return;
+  }
   let filePath = path.join(siteRoot, urlPath);
 
   fs.stat(filePath, (err, stats) => {

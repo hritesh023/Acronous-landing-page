@@ -1,7 +1,12 @@
 name = "acronous-landing"
 compatibility_date = "2026-05-30"
 main = "_worker.js"
-assets = { directory = ".", not_found_handling = "single-page-application" }
+# "none" so env.ASSETS.fetch returns real 404s. The worker implements its own
+# SPA fallback (index.html for navigations only) and returns JSON 404 for
+# /v1/* + /api/* misses. With "single-page-application" every payment-link
+# miss (e.g. /checkout without .html) served home page with 200, which is
+# what made payment links look like "redirect to home".
+assets = { directory = ".", not_found_handling = "none" }
 
 kv_namespaces = [
   { binding = "AUTH_USERS", id = "eb112976703e4447af69c13dd5f8824c" }

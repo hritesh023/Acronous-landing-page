@@ -113,11 +113,11 @@
     }
     // Same-origin first (hides backend host). If the static host has no
     // billing proxy (e.g. file:// preview) OR returned an HTML fallback page,
-    // retry once against central.
+    // retry once against central. Verify is idempotent (same payment just
+    // re-grants, never double-charges) so it retries too — otherwise a
+    // same-origin HTML fallback on verify strands paid users after Razorpay.
     return doFetch(API_BASE).catch(function (e) {
       if (API_BASE === '' && (e instanceof TypeError || e.status === 404 || e.status === 502 || e.isHtmlFallback)) {
-        // Only retry safe idempotent order/status reads, not verify (avoid double-charge confusion).
-        if (path.indexOf('/v1/billing/verify') !== -1 && e.isHtmlFallback) throw e;
         if (e.isHtmlFallback || e.status === 404) return doFetch(CENTRAL_FALLBACK);
         // 502 bad_response from same-origin: also try central once.
         if (e.status === 502 && e.body && e.body.error === 'bad_response') return doFetch(CENTRAL_FALLBACK);
