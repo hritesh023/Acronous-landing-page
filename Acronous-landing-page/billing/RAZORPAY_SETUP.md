@@ -138,7 +138,7 @@ Amounts are **not** configured in Razorpay — the worker sends
    `lib/billing/plans.dart` files, and `Equyvo/src/lib/plans.ts`.
 
 Current ladder: AI 0/149/**449**/999/2499 · Nav 0/99/**299**/699/1499 ·
-Equyvo 0/49/**149**/**399**/799 · One bundle 699 · API packs 99→1k / 499→6k /
+Equyvo 0/49/**149**/**1999**/5999 · One bundle 699 · API packs 99→1k / 499→6k /
 999→14k / 2499→40k credits.
 
 ## 8. Entitlement enforcement (what each plan unlocks)
@@ -147,7 +147,7 @@ Equyvo 0/49/**149**/**399**/799 · One bundle 699 · API packs 99→1k / 499→6
 |---|---|---|
 | Acronous AI | 20 chat / 3 images / 1 video per day | Starter ₹149: 200/20/3 · Plus ₹449: 1000/100/10 · Pro ₹999: 5000/300/30 · Ultra ₹2499: 20000/1000/100 |
 | Navigwiz | 10 AI tasks / 3 research per day | Starter ₹99: 100/20 · Plus ₹299: 500/100 · Pro ₹699: 2000/400 · Ultra ₹1499: 8000/1500 |
-| Equyvo | 5 GB storage, ads, basic tools | Plus ₹49: 50 GB · Premium ₹149: 250 GB, ad-free · Creator ₹399: 500 GB, 4K · Creator Pro ₹799: 1 TB |
+| Equyvo | 5 GB storage, ads, basic tools | Plus ₹49: 50 GB · Premium ₹149: 250 GB, ad-free · Creator ₹1,999: 500 GB, 4K · Creator Pro ₹5,999: 1 TB |
 | API | — | Packs: 99→1k / 499→6k / 999→14k / 2499→40k credits |
 
 All quotas enforced centrally in `cloudflare-worker.js` (`TIER_QUOTAS`, `checkQuota`).

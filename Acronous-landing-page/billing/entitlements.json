@@ -27,8 +27,8 @@
     "free": { "plan": "eq_free", "price_inr": 0, "storage_gb": 5, "max_upload_mb": 20, "max_video_sec": 60, "monthly_uploads": 100, "quality": "standard", "ads": "full", "ai_tools": false, "analytics": "basic" },
     "eq_plus": { "price_inr": 49, "storage_gb": 50, "max_upload_mb": 100, "max_video_sec": 180, "monthly_uploads": 500, "quality": "standard", "ads": "light", "ai_tools": false, "analytics": "basic" },
     "eq_premium": { "price_inr": 149, "storage_gb": 250, "max_upload_mb": 500, "max_video_sec": 600, "monthly_uploads": 2000, "quality": "high", "ads": "none", "ai_tools": true, "analytics": "advanced" },
-    "eq_creator": { "price_inr": 399, "storage_gb": 500, "max_upload_mb": 1024, "max_video_sec": 1800, "monthly_uploads": 5000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "creator", "monetization": true },
-    "eq_creator_pro": { "price_inr": 799, "storage_gb": 1024, "max_upload_mb": 2048, "max_video_sec": 7200, "monthly_uploads": 20000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "advanced-creator", "monetization": true, "api_access": true }
+    "eq_creator": { "price_inr": 1999, "storage_gb": 500, "max_upload_mb": 1024, "max_video_sec": 1800, "monthly_uploads": 5000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "creator", "monetization": true },
+    "eq_creator_pro": { "price_inr": 5999, "storage_gb": 1024, "max_upload_mb": 2048, "max_video_sec": 7200, "monthly_uploads": 20000, "quality": "4k", "ads": "none", "ai_tools": true, "analytics": "advanced-creator", "monetization": true, "api_access": true, "verified_badge": true },
   },
   "bundle": {
     "acronous_one": { "price_inr": 699, "grants": ["ai_plus_monthly", "nav_ai_plus", "eq_premium"], "api_credits_monthly": 2000, "blurb": "One bill: AI Plus + Navigwiz AI Plus + Equyvo Premium." }
