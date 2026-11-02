@@ -116,7 +116,15 @@ console.log((await r.json()).response);</code></pre></div>
     (function () {
       var B = window.AcronousBilling;
       function needSignin() { B.toast('Please sign in first (top-right of any Acronous app, same account).'); }
-      function base() { return B.getApiBase(); }
+      function base() {
+        // The landing worker does not serve /v1/* (except billing). Talk to the
+        // central API directly in production; stay same-origin only for local dev.
+        var h = window.location.hostname || '';
+        if (!h || h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost')) {
+          return B.getApiBase();
+        }
+        return 'https://api.acronous.com';
+      }
       function token() {
         // HttpOnly cookie is not readable from JS — use localStorage first
         // (populated at login or via ?token= handoff).
@@ -133,7 +141,7 @@ console.log((await r.json()).response);</code></pre></div>
         var t = token();
         if (!t) { needSignin(); return; }
         var name = (document.getElementById('key-name').value || 'default').slice(0, 60);
-        fetch(base() + '/v1/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ name: name }), credentials: 'include' })
+        fetch(base() + '/v1/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ name: name }), credentials: 'omit' })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             if (j.api_key) { document.getElementById('key-out').value = j.api_key; B.toast('Key created. Copy it now — it is never shown again.', true); refreshKeys(); }
@@ -148,11 +156,11 @@ console.log((await r.json()).response);</code></pre></div>
         var t = token();
         var headers = { 'Authorization': 'Bearer ' + (t || '') };
         // Also send the HttpOnly cookie automatically (web sessions).
-        fetch(base() + '/v1/api/keys', { headers: headers, credentials: 'include' }).then(function (r) { return r.json(); }).then(function (j) {
+        fetch(base() + '/v1/api/keys', { headers: headers, credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (j) {
           var list = (j.keys || []).map(function (k) { return '<div>' + k.prefix + ' · ' + (k.name || '') + '</div>'; }).join('');
           document.getElementById('key-list').innerHTML = list || '<div>No keys yet.</div>';
         }).catch(function () {});
-        fetch(base() + '/v1/api/usage', { headers: headers, credentials: 'include' }).then(function (r) { return r.json(); }).then(function (j) {
+        fetch(base() + '/v1/api/usage', { headers: headers, credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (j) {
           if (typeof j.api_credits === 'number') document.getElementById('credit-balance').textContent = j.api_credits.toLocaleString('en-IN');
         }).catch(function () {});
       }
@@ -162,14 +170,29 @@ console.log((await r.json()).response);</code></pre></div>
         if (!key || key.indexOf('ak_') !== 0) { B.toast('Create an API key first, then run.'); return; }
         var msg = document.getElementById('pg-msg').value || 'Hello!';
         document.getElementById('pg-out').textContent = 'Thinking… (1 credit)';
-        fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }), credentials: 'include' })
+        fetch(base() + '/v1/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': key }, body: JSON.stringify({ message: msg, session_id: 'playground' }), credentials: 'omit' })
           .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
           .then(function (both) {
+            if (both.s === 401) {
+              document.getElementById('pg-out').textContent = 'Unauthorized: check your API key.';
+              B.toast('Invalid or missing API key.');
+              return;
+            }
             if (both.s === 402) {
-              document.getElementById('pg-out').textContent = both.j.response || 'Out of API credits.';
+              document.getElementById('pg-out').textContent = both.j.response || both.j.error || 'Out of API credits.';
               B.toast('Out of credits — taking you to credit packs…');
               B.handlePaywall({ status: 402, body: both.j }, { product: 'api', delayMs: 1500 });
               refreshKeys();
+              return;
+            }
+            if (both.s === 429) {
+              document.getElementById('pg-out').textContent = both.j.response || both.j.error || 'Rate limited. Please slow down and retry shortly.';
+              B.toast('Rate limited — please retry in a moment.');
+              return;
+            }
+            if (both.s >= 400) {
+              document.getElementById('pg-out').textContent = both.j.response || both.j.error || ('Request failed (' + both.s + ')');
+              B.toast('Request failed (' + both.s + ').');
               return;
             }
             document.getElementById('pg-out').textContent = both.j.response || both.j.error || JSON.stringify(both.j).slice(0, 500);
