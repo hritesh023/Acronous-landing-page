@@ -44,14 +44,14 @@
     }
   },
   "api_packs": {
-    "_comment": "One-time prepaid credits for api.acronous.com (Acronous AI brain as an API). 1 credit ~= 1K chat tokens. Images ~20 credits, video ~50. Credits never expire for 12 months.",
+    "_comment": "One-time prepaid credits for api.acronous.com (Acronous AI brain as an API). 1 credit ~= 1K chat tokens. Images ~20 credits. Credits never expire for 12 months.",
     "packs": [
       { "id": "api_pack_99", "label": "API Starter", "price_inr": 99, "credits": 1000 },
       { "id": "api_pack_499", "label": "API Growth", "price_inr": 499, "credits": 6000 },
       { "id": "api_pack_999", "label": "API Scale", "price_inr": 999, "credits": 14000 },
       { "id": "api_pack_2499", "label": "API Business", "price_inr": 2499, "credits": 40000 }
     ],
-    "metering": { "chat_per_1k_tokens": 1, "image_generate": 20, "video_generate": 50, "web_search": 1, "min_per_request": 1 },
+    "metering": { "chat_per_1k_tokens": 1, "image_generate": 20, "web_search": 1, "min_per_request": 1 },
     "subscription_grants": { "ai_plus_monthly": 2000, "ai_pro_monthly": 10000, "ai_ultra_monthly": 40000, "acronous_one": 2000 }
   }
 }
