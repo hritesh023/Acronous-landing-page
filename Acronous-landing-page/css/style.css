@@ -42,7 +42,12 @@ ul{list-style:none}
   -webkit-backdrop-filter:blur(20px) saturate(1.2);
   border-bottom:1px solid var(--border-color);
   z-index:1000;
-  transition:var(--transition)
+  transition:var(--transition);
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  user-drag:none
 }
 .nav-container{
   display:flex;align-items:center;
