@@ -261,7 +261,7 @@
       nav_ai_plus: 'Navigwiz — AI Plus (₹299/mo)',
       nav_ai_pro: 'Navigwiz — AI Pro (₹699/mo)',
       nav_ai_ultra: 'Navigwiz — AI Ultra (₹1,499/mo)',
-      eq_plus: 'Equyvo — Plus (₹49/mo)',
+      eq_plus: 'Equyvo - Plus (₹79/mo)',
       eq_premium: 'Equyvo — Premium (₹149/mo)',
       eq_creator: 'Equyvo — Creator (₹1,999/mo)',
       eq_creator_pro: 'Equyvo — Creator Pro (₹5,999/mo)',
